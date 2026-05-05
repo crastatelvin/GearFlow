@@ -27,12 +27,19 @@ export default function ChatBot() {
     setInput('');
     setIsTyping(true);
 
-    // Simulate RAG response
+    // AI Logic with Human Escalation Simulation
     setTimeout(() => {
-      const assistantMessage = { 
-        role: 'assistant', 
-        content: "I can definitely help with that. Our smart dispatch system can find a mechanic for your bike within 60 minutes. Our base visiting and diagnosis fee is ₹200. Would you like me to guide you to the booking form?" 
-      };
+      let botResponse = "I can definitely help with that. Our smart dispatch system can find a mechanic for your bike within 60 minutes. Our base visiting and diagnosis fee is ₹200. Would you like me to guide you to the booking form?";
+      
+      const query = input.toLowerCase();
+      if (query.includes('human') || query.includes('agent') || query.includes('talk to someone')) {
+        botResponse = "I understand. I'm connecting you to a live GearFlow coordinator now. They will join this chat in a moment. Please stay online.";
+        // In production: trigger escalation webhook
+      } else if (query.includes('refund') || query.includes('cancel')) {
+        botResponse = "To process a refund or cancellation, I need to verify your Order ID. Please provide it, or I can connect you to our support team.";
+      }
+
+      const assistantMessage = { role: 'assistant', content: botResponse };
       setMessages(prev => [...prev, assistantMessage]);
       setIsTyping(false);
     }, 1500);

@@ -17,9 +17,9 @@
   - `[x]` React Native / Expo setup
   - `[x]` Offline sync implementation
   - `[x]` On-site workflow (Quote & AI Verification)
-- `[ ]` **Phase 5: Operations Dashboard**
-  - `[ ]` Real-time lead/mechanic tracking
-  - `[ ]` Revenue & Analytics reporting
+- `[x]` **Phase 5: Operations Dashboard**
+  - `[x]` Real-time lead/mechanic tracking
+  - `[x]` Revenue & Analytics reporting
 - `[ ]` **Phase 6: Testing & QA**
   - `[ ]` End-to-end integration tests
   - `[ ]` Fraud detection stress testing

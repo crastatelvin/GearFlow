@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   Users, 
@@ -14,11 +14,15 @@ import {
   ArrowUpRight,
   ShieldCheck,
   AlertTriangle,
-  Zap
+  Zap,
+  MoreVertical,
+  CheckCircle2,
+  XCircle,
+  Clock
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
-const data = [
+const chartData = [
   { name: 'Mon', revenue: 4000, orders: 24 },
   { name: 'Tue', revenue: 3000, orders: 18 },
   { name: 'Wed', revenue: 5000, orders: 29 },
@@ -29,10 +33,31 @@ const data = [
 ];
 
 export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState('Dashboard');
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'Dashboard':
+        return <DashboardHome />;
+      case 'Active Orders':
+        return <OrdersView />;
+      case 'Mechanics':
+        return <MechanicsView />;
+      case 'Fleet Map':
+        return <MapView />;
+      case 'Analytics':
+        return <AnalyticsView />;
+      case 'Fraud Logs':
+        return <FraudLogsView />;
+      default:
+        return <DashboardHome />;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-black text-white flex">
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 bg-black/50 backdrop-blur-xl hidden lg:flex flex-col">
+      <aside className="w-64 border-r border-white/5 bg-black/50 backdrop-blur-xl hidden lg:flex flex-col sticky top-0 h-screen">
         <div className="p-8 flex items-center gap-3">
           <div className="w-8 h-8 bg-brand-neon rounded flex items-center justify-center">
             <Zap className="text-black w-5 h-5" />
@@ -41,23 +66,22 @@ export default function AdminDashboard() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2">
-          <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active />
-          <SidebarItem icon={<ShoppingCart size={20} />} label="Active Orders" />
-          <SidebarItem icon={<Users size={20} />} label="Mechanics" />
-          <SidebarItem icon={<MapIcon size={20} />} label="Fleet Map" />
-          <SidebarItem icon={<TrendingUp size={20} />} label="Analytics" />
-          <SidebarItem icon={<ShieldCheck size={20} />} label="Fraud Logs" />
+          <SidebarItem icon={<LayoutDashboard size={20} />} label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => setActiveTab('Dashboard')} />
+          <SidebarItem icon={<ShoppingCart size={20} />} label="Active Orders" active={activeTab === 'Active Orders'} onClick={() => setActiveTab('Active Orders')} />
+          <SidebarItem icon={<Users size={20} />} label="Mechanics" active={activeTab === 'Mechanics'} onClick={() => setActiveTab('Mechanics')} />
+          <SidebarItem icon={<MapIcon size={20} />} label="Fleet Map" active={activeTab === 'Fleet Map'} onClick={() => setActiveTab('Fleet Map')} />
+          <SidebarItem icon={<TrendingUp size={20} />} label="Analytics" active={activeTab === 'Analytics'} onClick={() => setActiveTab('Analytics')} />
+          <SidebarItem icon={<ShieldCheck size={20} />} label="Fraud Logs" active={activeTab === 'Fraud Logs'} onClick={() => setActiveTab('Fraud Logs')} />
         </nav>
 
         <div className="p-6 border-t border-white/5">
-          <SidebarItem icon={<Settings size={20} />} label="Settings" />
+          <SidebarItem icon={<Settings size={20} />} label="Settings" active={activeTab === 'Settings'} onClick={() => setActiveTab('Settings')} />
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Topbar */}
-        <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/50 backdrop-blur-xl sticky top-0 z-10">
+        <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-black/50 backdrop-blur-xl sticky top-0 z-50">
           <div className="relative w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 w-4 h-4" />
             <input 
@@ -77,105 +101,293 @@ export default function AdminDashboard() {
           </div>
         </header>
 
-        {/* Dashboard Content */}
-        <div className="p-8 space-y-8">
-          <div className="flex justify-between items-end">
-            <div>
-              <h1 className="text-4xl font-black tracking-tighter">OPERATIONS <span className="text-brand-neon italic">HUB</span></h1>
-              <p className="text-gray-500 text-sm mt-1 uppercase tracking-widest font-bold">Real-time GearFlow Monitoring</p>
-            </div>
-            <div className="flex gap-4">
-              <button className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl hover:border-brand-neon/50 transition-colors text-sm font-bold">
-                EXPORT REPORT
-              </button>
-            </div>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <StatCard label="Live Leads" value="24" trend="+12%" icon={<Zap className="text-brand-neon" />} />
-            <StatCard label="Active Mechanics" value="156" trend="+3" icon={<Users className="text-brand-neon" />} />
-            <StatCard label="Daily Revenue" value="₹42,850" trend="+18%" icon={<TrendingUp className="text-brand-neon" />} />
-            <StatCard label="Fraud Alerts" value="0" trend="0" icon={<AlertTriangle className="text-yellow-500" />} />
-          </div>
-
-          <div className="grid lg:grid-cols-3 gap-8">
-            {/* Revenue Chart */}
-            <div className="lg:col-span-2 glass rounded-3xl p-8 border-white/5">
-              <div className="flex justify-between items-center mb-8">
-                <h3 className="text-xl font-bold tracking-tight">REVENUE FORECAST</h3>
-                <div className="flex gap-2 text-xs">
-                  <span className="px-2 py-1 bg-brand-neon/10 text-brand-neon rounded">WEEKLY</span>
-                  <span className="px-2 py-1 text-gray-500">MONTHLY</span>
-                </div>
-              </div>
-              <div className="h-80 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={data}>
-                    <defs>
-                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#39FF14" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#39FF14" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
-                    <XAxis dataKey="name" stroke="#555" fontSize={12} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#555" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
-                    <Tooltip 
-                      contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #39FF1433', borderRadius: '12px' }}
-                      itemStyle={{ color: '#39FF14' }}
-                    />
-                    <Area type="monotone" dataKey="revenue" stroke="#39FF14" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Live Feed */}
-            <div className="glass rounded-3xl p-8 border-white/5 flex flex-col">
-              <h3 className="text-xl font-bold tracking-tight mb-8 uppercase text-xs text-gray-500 tracking-widest">Live Activity</h3>
-              <div className="space-y-6 flex-1">
-                <ActivityItem 
-                  title="Lead Paid (₹200)" 
-                  desc="Rahul S. • Classic 350" 
-                  time="2m ago" 
-                  status="dispatching"
-                />
-                <ActivityItem 
-                  title="Work Started" 
-                  desc="Alex G. • Arrived at Sector 5" 
-                  time="5m ago" 
-                  status="working"
-                />
-                <ActivityItem 
-                  title="Payment Received" 
-                  desc="Job #4829 • ₹1,250" 
-                  time="12m ago" 
-                  status="paid"
-                />
-                <ActivityItem 
-                  title="AI Verification" 
-                  desc="Part Check: PASSED" 
-                  time="15m ago" 
-                  status="verified"
-                />
-              </div>
-              <button className="w-full mt-6 py-4 border border-white/5 hover:border-brand-neon/50 text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-brand-neon transition-all rounded-xl">
-                View All Activity
-              </button>
-            </div>
-          </div>
+        <div className="p-8">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
         </div>
       </main>
     </div>
   );
 }
 
-function SidebarItem({ icon, label, active = false }: { icon: React.ReactNode, label: string, active?: boolean }) {
+// --- Dashboard Home ---
+function DashboardHome() {
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
-      active ? 'bg-brand-neon text-black font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'
-    }`}>
+    <div className="space-y-8">
+      <div className="flex justify-between items-end">
+        <div>
+          <h1 className="text-4xl font-black tracking-tighter">OPERATIONS <span className="text-brand-neon italic">HUB</span></h1>
+          <p className="text-gray-500 text-sm mt-1 uppercase tracking-widest font-bold">Real-time GearFlow Monitoring</p>
+        </div>
+        <button className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl hover:border-brand-neon/50 transition-colors text-sm font-bold">
+          EXPORT REPORT
+        </button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard label="Live Leads" value="24" trend="+12%" icon={<Zap className="text-brand-neon" />} />
+        <StatCard label="Active Mechanics" value="156" trend="+3" icon={<Users className="text-brand-neon" />} />
+        <StatCard label="Daily Revenue" value="₹42,850" trend="+18%" icon={<TrendingUp className="text-brand-neon" />} />
+        <StatCard label="Fraud Alerts" value="0" trend="0" icon={<AlertTriangle className="text-yellow-500" />} />
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 glass rounded-3xl p-8 border-white/5 min-h-[400px]">
+          <h3 className="text-xl font-bold tracking-tight mb-8">REVENUE FORECAST</h3>
+          <div className="h-[300px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData}>
+                <defs>
+                  <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#39FF14" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#39FF14" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                <XAxis dataKey="name" stroke="#555" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="#555" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value}`} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0A0A0A', border: '1px solid #39FF1433', borderRadius: '12px' }}
+                  itemStyle={{ color: '#39FF14' }}
+                />
+                <Area type="monotone" dataKey="revenue" stroke="#39FF14" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="glass rounded-3xl p-8 border-white/5 flex flex-col">
+          <h3 className="text-xl font-bold tracking-tight mb-8 uppercase text-xs text-gray-500 tracking-widest">Live Activity</h3>
+          <div className="space-y-6 flex-1">
+            <ActivityItem title="Lead Paid (₹200)" desc="Rahul S. • Classic 350" time="2m ago" status="dispatching" />
+            <ActivityItem title="Work Started" desc="Alex G. • Arrived at Sector 5" time="5m ago" status="working" />
+            <ActivityItem title="Payment Received" desc="Job #4829 • ₹1,250" time="12m ago" status="paid" />
+            <ActivityItem title="AI Verification" desc="Part Check: PASSED" time="15m ago" status="verified" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Orders View ---
+function OrdersView() {
+  const orders = [
+    { id: '#GF-9283', customer: 'Rahul Sharma', vehicle: 'Bullet 350', status: 'DISPATCHED', amount: '₹1,250', time: '12:45 PM' },
+    { id: '#GF-9284', customer: 'Anita Roy', vehicle: 'Activa 6G', status: 'ARRIVED', amount: '₹450', time: '01:15 PM' },
+    { id: '#GF-9285', customer: 'Vikram Singh', vehicle: 'KTM Duke', status: 'WORKING', amount: '₹3,200', time: '01:30 PM' },
+    { id: '#GF-9286', customer: 'Sneha Kapur', vehicle: 'Vespa VXL', status: 'PENDING_FEE', amount: '₹200', time: '02:00 PM' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <h1 className="text-4xl font-black tracking-tighter">ACTIVE <span className="text-brand-neon italic">ORDERS</span></h1>
+      <div className="glass rounded-3xl overflow-hidden border-white/5">
+        <table className="w-full text-left">
+          <thead className="bg-white/5 border-b border-white/5 text-gray-500 text-xs font-bold uppercase tracking-widest">
+            <tr>
+              <th className="p-6">Order ID</th>
+              <th className="p-6">Customer</th>
+              <th className="p-6">Vehicle</th>
+              <th className="p-6">Status</th>
+              <th className="p-6">Amount</th>
+              <th className="p-6">Time</th>
+              <th className="p-6 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-white/5">
+            {orders.map((order) => (
+              <tr key={order.id} className="hover:bg-white/5 transition-colors">
+                <td className="p-6 font-bold">{order.id}</td>
+                <td className="p-6">{order.customer}</td>
+                <td className="p-6 text-gray-400">{order.vehicle}</td>
+                <td className="p-6">
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-black ${
+                    order.status === 'WORKING' ? 'bg-brand-neon/20 text-brand-neon' :
+                    order.status === 'DISPATCHED' ? 'bg-blue-500/20 text-blue-500' :
+                    'bg-gray-500/20 text-gray-500'
+                  }`}>
+                    {order.status}
+                  </span>
+                </td>
+                <td className="p-6 font-bold">{order.amount}</td>
+                <td className="p-6 text-gray-500">{order.time}</td>
+                <td className="p-6 text-right">
+                  <button className="text-gray-500 hover:text-brand-neon"><MoreVertical size={20} /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// --- Mechanics View ---
+function MechanicsView() {
+  const mechanics = [
+    { name: 'Alex Gearhead', jobs: 12, status: 'AVAILABLE', rating: 4.9, location: 'Sector 5' },
+    { name: 'John Piston', jobs: 8, status: 'WORKING', rating: 4.7, location: 'Downtown' },
+    { name: 'Sam Spark', jobs: 15, status: 'WORKING', rating: 4.8, location: 'North Block' },
+    { name: 'Mike Bolt', jobs: 5, status: 'OFFLINE', rating: 4.5, location: 'N/A' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <h1 className="text-4xl font-black tracking-tighter">FLEET <span className="text-brand-neon italic">MASTERS</span></h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {mechanics.map((m) => (
+          <div key={m.name} className="glass p-6 rounded-3xl border-white/5 text-center">
+            <div className="w-16 h-16 bg-brand-neon/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-brand-neon/30">
+              <Users className="text-brand-neon" size={32} />
+            </div>
+            <h3 className="font-bold text-lg">{m.name}</h3>
+            <p className="text-gray-500 text-xs mb-4">{m.location}</p>
+            <div className="flex justify-between items-center bg-black/40 p-3 rounded-xl">
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase">Jobs</p>
+                <p className="font-black text-brand-neon">{m.jobs}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-500 font-bold uppercase">Rating</p>
+                <p className="font-black">★ {m.rating}</p>
+              </div>
+            </div>
+            <div className={`mt-4 py-2 rounded-lg text-[10px] font-black ${
+              m.status === 'AVAILABLE' ? 'bg-brand-neon text-black' : 'bg-white/5 text-gray-500'
+            }`}>
+              {m.status}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Map View ---
+function MapView() {
+  return (
+    <div className="space-y-8">
+      <h1 className="text-4xl font-black tracking-tighter">FLEET <span className="text-brand-neon italic">MAP</span></h1>
+      <div className="glass rounded-3xl h-[600px] border-white/5 flex items-center justify-center relative overflow-hidden bg-brand-dark">
+        <div className="absolute inset-0 opacity-20 bg-[url('https://api.mapbox.com/styles/v1/mapbox/dark-v10/static/0,0,1/800x600?access_token=placeholder')] bg-cover" />
+        <div className="relative z-10 text-center">
+          <MapIcon size={64} className="text-brand-neon mb-4 mx-auto animate-bounce" />
+          <p className="text-gray-500 font-bold tracking-widest uppercase">Live GPS Tracking Enabled</p>
+          <div className="mt-8 flex gap-4 justify-center">
+             {[1,2,3,4,5].map(i => (
+               <motion.div 
+                 key={i}
+                 animate={{ scale: [1, 1.2, 1] }}
+                 transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
+                 className="w-3 h-3 bg-brand-neon rounded-full shadow-[0_0_10px_#39FF14]"
+               />
+             ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Analytics View ---
+function AnalyticsView() {
+  return (
+    <div className="space-y-8">
+      <h1 className="text-4xl font-black tracking-tighter">BUSINESS <span className="text-brand-neon italic">INSIGHTS</span></h1>
+      <div className="grid lg:grid-cols-2 gap-8">
+        <div className="glass p-8 rounded-3xl border-white/5 h-[400px]">
+          <h3 className="text-lg font-bold mb-8">ORDER VOLUME</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+              <XAxis dataKey="name" stroke="#555" fontSize={12} />
+              <YAxis stroke="#555" fontSize={12} />
+              <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #333' }} />
+              <Line type="monotone" dataKey="orders" stroke="#39FF14" strokeWidth={4} dot={{ fill: '#39FF14' }} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="glass p-8 rounded-3xl border-white/5 flex flex-col justify-center text-center">
+            <p className="text-gray-500 text-xs font-bold uppercase mb-2">Avg. Ticket</p>
+            <p className="text-4xl font-black text-brand-neon">₹1,450</p>
+          </div>
+          <div className="glass p-8 rounded-3xl border-white/5 flex flex-col justify-center text-center">
+            <p className="text-gray-500 text-xs font-bold uppercase mb-2">CSAT</p>
+            <p className="text-4xl font-black text-brand-neon">4.8/5</p>
+          </div>
+          <div className="glass p-8 rounded-3xl border-white/5 flex flex-col justify-center text-center">
+            <p className="text-gray-500 text-xs font-bold uppercase mb-2">Refund Rate</p>
+            <p className="text-4xl font-black text-red-500">0.2%</p>
+          </div>
+          <div className="glass p-8 rounded-3xl border-white/5 flex flex-col justify-center text-center">
+            <p className="text-gray-500 text-xs font-bold uppercase mb-2">Retention</p>
+            <p className="text-4xl font-black text-brand-neon">64%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// --- Fraud Logs View ---
+function FraudLogsView() {
+  const logs = [
+    { id: 'F-1', type: 'Proximity Mismatch', target: 'John P.', severity: 'HIGH', time: '10m ago' },
+    { id: 'F-2', type: 'OTP Bypass Attempt', target: 'Lead #482', severity: 'CRITICAL', time: '1h ago' },
+    { id: 'F-3', type: 'Location Spoofing', target: 'Mike B.', severity: 'LOW', time: '4h ago' },
+  ];
+
+  return (
+    <div className="space-y-8">
+      <h1 className="text-4xl font-black tracking-tighter">FRAUD <span className="text-red-500 italic">LOGS</span></h1>
+      <div className="space-y-4">
+        {logs.map(log => (
+          <div key={log.id} className="glass p-6 rounded-2xl border-white/5 flex items-center justify-between hover:border-red-500/30 transition-all">
+            <div className="flex items-center gap-6">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                log.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-500' : 'bg-yellow-500/20 text-yellow-500'
+              }`}>
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h3 className="font-bold">{log.type}</h3>
+                <p className="text-xs text-gray-500">Suspect: {log.target} • {log.time}</p>
+              </div>
+            </div>
+            <span className={`px-4 py-1 rounded-full text-[10px] font-black ${
+              log.severity === 'CRITICAL' ? 'bg-red-500 text-white' : 'bg-yellow-500 text-black'
+            }`}>
+              {log.severity}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Reusable Components ---
+function SidebarItem({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick: () => void }) {
+  return (
+    <div 
+      onClick={onClick}
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl cursor-pointer transition-all ${
+        active ? 'bg-brand-neon text-black font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+      }`}
+    >
       {icon}
       <span className="text-sm">{label}</span>
     </div>

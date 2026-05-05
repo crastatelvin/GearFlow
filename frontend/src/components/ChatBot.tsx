@@ -1,0 +1,119 @@
+"use client";
+
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MessageSquare, Send, X, Bot, User, Loader2 } from 'lucide-react';
+
+export default function ChatBot() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState([
+    { role: 'assistant', content: 'Hi! I am the GearFlow AI Assistant. How can I help you with your bike service today?' }
+  ]);
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = { role: 'user', content: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsTyping(true);
+
+    // Simulate RAG response
+    setTimeout(() => {
+      const assistantMessage = { 
+        role: 'assistant', 
+        content: "I can definitely help with that. Our smart dispatch system can find a mechanic for your bike within 60 minutes. Our base visiting and diagnosis fee is ₹200. Would you like me to guide you to the booking form?" 
+      };
+      setMessages(prev => [...prev, assistantMessage]);
+      setIsTyping(false);
+    }, 1500);
+  };
+
+  return (
+    <>
+      <button 
+        onClick={() => setIsOpen(true)}
+        className="fixed bottom-8 right-8 w-16 h-16 bg-brand-neon rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(57,255,20,0.4)] hover:scale-110 transition-transform z-50"
+      >
+        <MessageSquare className="text-black w-8 h-8" />
+      </button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 100 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 100 }}
+            className="fixed bottom-28 right-8 w-[400px] h-[550px] glass border border-brand-neon/30 rounded-3xl overflow-hidden flex flex-col z-50"
+          >
+            {/* Header */}
+            <div className="p-6 bg-brand-neon flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+                  <Bot className="text-brand-neon w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-black font-black text-sm tracking-tight">GEARFLOW AI</h3>
+                  <p className="text-black/60 text-[10px] font-bold">ONLINE | RAG POWERED</p>
+                </div>
+              </div>
+              <button onClick={() => setIsOpen(false)} className="text-black/60 hover:text-black">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+              {messages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] p-4 rounded-2xl text-sm ${
+                    msg.role === 'user' 
+                      ? 'bg-brand-neon text-black font-medium rounded-tr-none' 
+                      : 'bg-white/5 border border-white/10 text-gray-300 rounded-tl-none'
+                  }`}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))}
+              {isTyping && (
+                <div className="flex justify-start">
+                  <div className="bg-white/5 border border-white/10 p-4 rounded-2xl rounded-tl-none">
+                    <Loader2 className="w-4 h-4 animate-spin text-brand-neon" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Input */}
+            <div className="p-6 border-t border-white/10 bg-black/50">
+              <div className="flex gap-2">
+                <input 
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  placeholder="Type your message..."
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-brand-neon outline-none transition-colors"
+                />
+                <button 
+                  onClick={handleSend}
+                  className="w-12 h-12 bg-brand-neon text-black rounded-xl flex items-center justify-center hover:shadow-[0_0_15px_rgba(57,255,20,0.3)] transition-all"
+                >
+                  <Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+}

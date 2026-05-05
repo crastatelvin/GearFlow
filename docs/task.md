@@ -9,10 +9,10 @@
   - `[x]` Setup PostgreSQL Database
   - `[x]` Initialize n8n self-hosted instance
   - `[x]` Build core API wrapper (Express/FastAPI)
-- `[ ]` **Phase 3: Customer Web Application**
-  - `[ ]` Next.js frontend setup
-  - `[ ]` Booking & Payment integration
-  - `[ ]` RAG Chatbot deployment
+- `[x]` **Phase 3: Customer Web Application**
+  - `[x]` Next.js frontend setup
+  - `[x]` Booking & Payment integration
+  - `[x]` RAG Chatbot deployment
 - `[ ]` **Phase 4: Mechanic Mobile Application**
   - `[ ]` React Native / Expo setup
   - `[ ]` Offline sync implementation

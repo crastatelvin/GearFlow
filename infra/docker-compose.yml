@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    container_name: gearflow_db
+    environment:
+      POSTGRES_USER: gearflow_admin
+      POSTGRES_PASSWORD: gearflow_password
+      POSTGRES_DB: gearflow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: gearflow_n8n
+    restart: always
+    environment:
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=db
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=gearflow
+      - DB_POSTGRESDB_USER=gearflow_admin
+      - DB_POSTGRESDB_PASSWORD=gearflow_password
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+    ports:
+      - "5678:5678"
+    depends_on:
+      - db
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  pgdata:
+  n8n_data:

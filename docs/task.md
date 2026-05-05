@@ -1,0 +1,28 @@
+# Autonomous Bike Service - Task List
+
+- `[x]` **Phase 1: System Design & Architecture**
+  - `[x]` Design Database Schema
+  - `[x]` Map n8n Workflows
+  - `[x]` Define RAG Chatbot Knowledge Base Structure
+  - `[x]` Detail Fraud Prevention & Offline Sync specs
+- `[x]` **Phase 2: Backend & Infrastructure**
+  - `[x]` Setup PostgreSQL Database
+  - `[x]` Initialize n8n self-hosted instance
+  - `[x]` Build core API wrapper (Express/FastAPI)
+- `[ ]` **Phase 3: Customer Web Application**
+  - `[ ]` Next.js frontend setup
+  - `[ ]` Booking & Payment integration
+  - `[ ]` RAG Chatbot deployment
+- `[ ]` **Phase 4: Mechanic Mobile Application**
+  - `[ ]` React Native / Expo setup
+  - `[ ]` Offline sync implementation
+  - `[ ]` On-site workflow (Quote & AI Verification)
+- `[ ]` **Phase 5: Operations Dashboard**
+  - `[ ]` Real-time lead/mechanic tracking
+  - `[ ]` Revenue & Analytics reporting
+- `[ ]` **Phase 6: Testing & QA**
+  - `[ ]` End-to-end integration tests
+  - `[ ]` Fraud detection stress testing
+- `[ ]` **Phase 7: Deployment & Launch**
+  - `[ ]` Dockerization & AWS/Vercel deployment
+  - `[ ]` Production environment variables & security audit

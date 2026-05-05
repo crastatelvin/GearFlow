@@ -181,26 +181,35 @@ function DashboardHome() {
 
 // --- Orders View ---
 function OrdersView() {
+  const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
+
   const orders = [
-    { id: '#GF-9283', customer: 'Rahul Sharma', vehicle: 'Bullet 350', status: 'DISPATCHED', amount: '₹1,250', time: '12:45 PM' },
-    { id: '#GF-9284', customer: 'Anita Roy', vehicle: 'Activa 6G', status: 'ARRIVED', amount: '₹450', time: '01:15 PM' },
-    { id: '#GF-9285', customer: 'Vikram Singh', vehicle: 'KTM Duke', status: 'WORKING', amount: '₹3,200', time: '01:30 PM' },
-    { id: '#GF-9286', customer: 'Sneha Kapur', vehicle: 'Vespa VXL', status: 'PENDING_FEE', amount: '₹200', time: '02:00 PM' },
+    { id: '#GF-9283', customer: 'Rahul Sharma', vehicle: 'Bullet 350', status: 'DISPATCHED', amount: '₹1,250', time: '12:45 PM', mechanic: 'Alex G.' },
+    { id: '#GF-9284', customer: 'Anita Roy', vehicle: 'Activa 6G', status: 'ARRIVED', amount: '₹450', time: '01:15 PM', mechanic: 'John P.' },
+    { id: '#GF-9285', customer: 'Vikram Singh', vehicle: 'KTM Duke', status: 'WORKING', amount: '₹3,200', time: '01:30 PM', mechanic: 'Sam S.' },
+    { id: '#GF-9286', customer: 'Sneha Kapur', vehicle: 'Vespa VXL', status: 'PENDING_FEE', amount: '₹200', time: '02:00 PM', mechanic: null },
   ];
+
+  const mechanics = ['Alex Gearhead', 'John Piston', 'Sam Spark', 'Mike Bolt'];
 
   return (
     <div className="space-y-8">
-      <h1 className="text-4xl font-black tracking-tighter">ACTIVE <span className="text-brand-neon italic">ORDERS</span></h1>
+      <div className="flex justify-between items-end">
+        <h1 className="text-4xl font-black tracking-tighter">ACTIVE <span className="text-brand-neon italic">ORDERS</span></h1>
+        <div className="flex gap-2">
+           <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold text-gray-500 uppercase">Auto-Dispatch: ON</span>
+        </div>
+      </div>
+
       <div className="glass rounded-3xl overflow-hidden border-white/5">
         <table className="w-full text-left">
           <thead className="bg-white/5 border-b border-white/5 text-gray-500 text-xs font-bold uppercase tracking-widest">
             <tr>
               <th className="p-6">Order ID</th>
               <th className="p-6">Customer</th>
-              <th className="p-6">Vehicle</th>
               <th className="p-6">Status</th>
+              <th className="p-6">Mechanic</th>
               <th className="p-6">Amount</th>
-              <th className="p-6">Time</th>
               <th className="p-6 text-right">Action</th>
             </tr>
           </thead>
@@ -208,8 +217,10 @@ function OrdersView() {
             {orders.map((order) => (
               <tr key={order.id} className="hover:bg-white/5 transition-colors">
                 <td className="p-6 font-bold">{order.id}</td>
-                <td className="p-6">{order.customer}</td>
-                <td className="p-6 text-gray-400">{order.vehicle}</td>
+                <td className="p-6">
+                   <p className="font-bold">{order.customer}</p>
+                   <p className="text-[10px] text-gray-500 uppercase font-bold">{order.vehicle}</p>
+                </td>
                 <td className="p-6">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black ${
                     order.status === 'WORKING' ? 'bg-brand-neon/20 text-brand-neon' :
@@ -219,10 +230,40 @@ function OrdersView() {
                     {order.status}
                   </span>
                 </td>
+                <td className="p-6">
+                   {order.mechanic ? (
+                     <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-brand-neon/10 rounded-full flex items-center justify-center text-brand-neon text-[10px] font-black">{order.mechanic[0]}</div>
+                        <span className="text-sm">{order.mechanic}</span>
+                     </div>
+                   ) : (
+                     <button 
+                       onClick={() => setSelectedOrder(order.id)}
+                       className="text-[10px] font-black text-brand-neon border border-brand-neon/30 px-3 py-1 rounded-lg hover:bg-brand-neon hover:text-black transition-all"
+                     >
+                       ALLOCATE NOW
+                     </button>
+                   )}
+                </td>
                 <td className="p-6 font-bold">{order.amount}</td>
-                <td className="p-6 text-gray-500">{order.time}</td>
-                <td className="p-6 text-right">
-                  <button className="text-gray-500 hover:text-brand-neon"><MoreVertical size={20} /></button>
+                <td className="p-6 text-right relative">
+                  <button className="text-gray-500 hover:text-white"><MoreVertical size={20} /></button>
+                  
+                  {selectedOrder === order.id && (
+                    <div className="absolute right-6 top-16 w-48 glass border-white/10 rounded-2xl shadow-2xl z-50 p-2 text-left">
+                       <p className="text-[10px] text-gray-500 font-bold uppercase p-2 border-b border-white/5">Available Mechanics</p>
+                       {mechanics.map(m => (
+                         <button 
+                           key={m} 
+                           onClick={() => setSelectedOrder(null)}
+                           className="w-full text-left p-2 text-xs hover:bg-brand-neon hover:text-black rounded-lg transition-colors flex items-center gap-2"
+                         >
+                            <div className="w-1.5 h-1.5 bg-brand-neon rounded-full" />
+                            {m}
+                         </button>
+                       ))}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
@@ -277,24 +318,105 @@ function MechanicsView() {
 
 // --- Map View ---
 function MapView() {
+  const [selectedMechanic, setSelectedMechanic] = useState<string | null>(null);
+
+  const activeMechanics = [
+    { id: 1, name: 'Alex G.', pos: { top: '30%', left: '40%' }, status: 'WORKING' },
+    { id: 2, name: 'John P.', pos: { top: '60%', left: '20%' }, status: 'DISPATCHED' },
+    { id: 3, name: 'Sam S.', pos: { top: '45%', left: '70%' }, status: 'AVAILABLE' },
+    { id: 4, name: 'Mike B.', pos: { top: '80%', left: '55%' }, status: 'AVAILABLE' },
+  ];
+
   return (
     <div className="space-y-8">
-      <h1 className="text-4xl font-black tracking-tighter">FLEET <span className="text-brand-neon italic">MAP</span></h1>
-      <div className="glass rounded-3xl h-[600px] border-white/5 flex items-center justify-center relative overflow-hidden bg-brand-dark">
-        <div className="absolute inset-0 opacity-20 bg-[url('https://api.mapbox.com/styles/v1/mapbox/dark-v10/static/0,0,1/800x600?access_token=placeholder')] bg-cover" />
-        <div className="relative z-10 text-center">
-          <MapIcon size={64} className="text-brand-neon mb-4 mx-auto animate-bounce" />
-          <p className="text-gray-500 font-bold tracking-widest uppercase">Live GPS Tracking Enabled</p>
-          <div className="mt-8 flex gap-4 justify-center">
-             {[1,2,3,4,5].map(i => (
+      <div className="flex justify-between items-end">
+        <h1 className="text-4xl font-black tracking-tighter">FLEET <span className="text-brand-neon italic">MAP</span></h1>
+        <div className="flex gap-4 text-xs font-bold uppercase tracking-widest text-gray-500">
+           <div className="flex items-center gap-2"><div className="w-2 h-2 bg-brand-neon rounded-full" /> Available</div>
+           <div className="flex items-center gap-2"><div className="w-2 h-2 bg-blue-500 rounded-full" /> Working</div>
+        </div>
+      </div>
+
+      <div className="glass rounded-3xl h-[650px] border-white/5 relative overflow-hidden bg-[#050505]">
+        {/* Mock Map Background Grid */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" 
+             style={{ backgroundImage: 'radial-gradient(#39FF14 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }} />
+        
+        {/* Simulated Road Lines */}
+        <div className="absolute inset-0 opacity-5 pointer-events-none">
+           <div className="absolute top-1/2 w-full h-[2px] bg-white" />
+           <div className="absolute left-1/3 h-full w-[2px] bg-white" />
+           <div className="absolute left-2/3 h-full w-[2px] bg-white" />
+        </div>
+
+        {activeMechanics.map((m) => (
+          <motion.div
+            key={m.id}
+            initial={m.pos}
+            animate={{ 
+              top: [m.pos.top, `${parseInt(m.pos.top) + (Math.random() * 2 - 1)}%`],
+              left: [m.pos.left, `${parseInt(m.pos.left) + (Math.random() * 2 - 1)}%`]
+            }}
+            transition={{ duration: 5, repeat: Infinity, repeatType: 'reverse' }}
+            onClick={() => setSelectedMechanic(m.name)}
+            className="absolute cursor-pointer group"
+            style={m.pos}
+          >
+            <div className="relative">
                <motion.div 
-                 key={i}
-                 animate={{ scale: [1, 1.2, 1] }}
-                 transition={{ duration: 2, repeat: Infinity, delay: i * 0.4 }}
-                 className="w-3 h-3 bg-brand-neon rounded-full shadow-[0_0_10px_#39FF14]"
+                 animate={{ scale: [1, 2, 1], opacity: [0.5, 0, 0.5] }}
+                 transition={{ duration: 2, repeat: Infinity }}
+                 className={`absolute -inset-4 rounded-full ${m.status === 'AVAILABLE' ? 'bg-brand-neon' : 'bg-blue-500'}`}
                />
-             ))}
-          </div>
+               <div className={`w-4 h-4 rounded-full border-2 border-black shadow-lg ${
+                 m.status === 'AVAILABLE' ? 'bg-brand-neon' : 'bg-blue-500'
+               }`} />
+               
+               {/* Label */}
+               <div className="absolute top-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/80 backdrop-blur-md border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                 {m.name} • {m.status}
+               </div>
+            </div>
+          </motion.div>
+        ))}
+
+        {/* Mechanic Info Overlay */}
+        <AnimatePresence>
+          {selectedMechanic && (
+            <motion.div 
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              className="absolute right-8 top-8 w-64 glass p-6 rounded-2xl border-white/10 shadow-2xl z-20"
+            >
+              <div className="flex justify-between items-start mb-6">
+                <h3 className="font-bold text-lg">{selectedMechanic}</h3>
+                <button onClick={() => setSelectedMechanic(null)} className="text-gray-500 hover:text-white"><XCircle size={20} /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                   <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Current Speed</p>
+                   <p className="text-xl font-black text-brand-neon italic">24 KM/H</p>
+                </div>
+                <div>
+                   <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Heading</p>
+                   <p className="text-sm font-bold">North-East (Sector 5)</p>
+                </div>
+                <button className="w-full py-3 bg-white/5 hover:bg-brand-neon hover:text-black rounded-xl text-xs font-bold transition-all">
+                  VIEW JOB DETAILS
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Map Legend */}
+        <div className="absolute bottom-8 left-8 glass px-4 py-3 rounded-xl border-white/10 flex items-center gap-4">
+           <MapIcon size={20} className="text-brand-neon" />
+           <div>
+              <p className="text-[10px] font-bold text-white uppercase tracking-tighter">Live Tracker</p>
+              <p className="text-[9px] text-gray-500 font-bold italic uppercase tracking-tighter">4 Active Units</p>
+           </div>
         </div>
       </div>
     </div>

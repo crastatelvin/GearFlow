@@ -1,8 +1,33 @@
-import React from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar } from 'react-native';
-import { Settings, Wallet, MapPin, Zap, Shield, User, Clock, ChevronRight } from 'lucide-react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Linking, Platform } from 'react-native';
+import { Settings, Wallet, MapPin, Zap, Shield, User, Clock, ChevronRight, X, Check, Navigation } from 'lucide-react-native';
 
 export default function Dashboard() {
+  const [hasNewLead, setHasNewLead] = useState(true);
+  const [currentStatus, setCurrentStatus] = useState('IDLE');
+
+  const handleAccept = () => {
+    setHasNewLead(false);
+    setCurrentStatus('IN_ROUTE');
+  };
+
+  const handleReject = () => {
+    setHasNewLead(false);
+    setCurrentStatus('IDLE');
+  };
+
+  const openMaps = (lat = 28.6139, lng = 77.2090) => {
+    const scheme = Platform.select({ ios: 'maps:0,0?q=', android: 'geo:0,0?q=' });
+    const latLng = `${lat},${lng}`;
+    const label = 'Customer Location';
+    const url = Platform.select({
+      ios: `${scheme}${label}@${latLng}`,
+      android: `${scheme}${latLng}(${label})`
+    });
+
+    Linking.openURL(url!);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -42,30 +67,77 @@ export default function Dashboard() {
           </View>
         </View>
 
-        {/* Active Lead Section */}
-        <Text style={styles.sectionTitle}>ACTIVE DISPATCH</Text>
-        <TouchableOpacity style={styles.leadCard}>
-          <View style={styles.leadHeader}>
-            <View style={styles.activeBadge}>
-              <View style={styles.pulseDot} />
-              <Text style={styles.activeText}>IN ROUTE</Text>
-            </View>
-            <Text style={styles.timeText}>15 mins away</Text>
+        {/* New Lead Alert */}
+        {hasNewLead && (
+          <View style={styles.newLeadAlert}>
+             <View style={styles.newLeadHeader}>
+                <Text style={styles.newLeadTitle}>NEW SERVICE REQUEST</Text>
+                <Text style={styles.newLeadTimer}>0:45</Text>
+             </View>
+             <Text style={styles.bikeModelLarge}>Royal Enfield Interceptor 650</Text>
+             <View style={styles.locationContainer}>
+                <MapPin size={16} color="#39FF14" />
+                <Text style={styles.locationText}>2.4 km away • Sector 14</Text>
+             </View>
+             
+             <View style={styles.decisionRow}>
+                <TouchableOpacity onPress={handleReject} style={[styles.decisionBtn, styles.rejectBtn]}>
+                   <X color="#ff4444" size={24} />
+                   <Text style={styles.rejectBtnText}>REJECT</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleAccept} style={[styles.decisionBtn, styles.acceptBtn]}>
+                   <Check color="#000" size={24} />
+                   <Text style={styles.acceptBtnText}>ACCEPT JOB</Text>
+                </TouchableOpacity>
+             </View>
           </View>
-          
-          <Text style={styles.bikeModel}>Royal Enfield Classic 350</Text>
-          <View style={styles.locationContainer}>
-            <MapPin size={16} color="#39FF14" />
-            <Text style={styles.locationText}>Downtown, Sector 5, Block B</Text>
-          </View>
+        )}
 
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.viewBtn}>
-              <Text style={styles.viewBtnText}>VIEW DETAILS</Text>
-              <ChevronRight size={18} color="#39FF14" />
+        {/* Active Dispatch Section */}
+        {currentStatus === 'IN_ROUTE' && (
+          <>
+            <Text style={styles.sectionTitle}>ACTIVE DISPATCH</Text>
+            <TouchableOpacity style={styles.leadCard}>
+              <View style={styles.leadHeader}>
+                <View style={styles.activeBadge}>
+                  <View style={styles.pulseDot} />
+                  <Text style={styles.activeText}>IN ROUTE</Text>
+                </View>
+                <Text style={styles.timeText}>15 mins away</Text>
+              </View>
+              
+              <Text style={styles.bikeModel}>Royal Enfield Classic 350</Text>
+              <View style={styles.locationContainer}>
+                <MapPin size={16} color="#39FF14" />
+                <Text style={styles.locationText}>Downtown, Sector 5, Block B</Text>
+              </View>
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity onPress={() => openMaps()} style={styles.navigateBtn}>
+                   <Navigation size={18} color="#000" />
+                   <Text style={styles.navigateBtnText}>NAVIGATE TO CUSTOMER</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.viewBtn}>
+                  <Text style={styles.viewBtnText}>VIEW DETAILS</Text>
+                  <ChevronRight size={18} color="#39FF14" />
+                </TouchableOpacity>
+              </View>
             </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
+          </>
+        )}
+
+        {/* Quick Actions */}
+        <Text style={styles.sectionTitle}>RESOURCES</Text>
+        <View style={styles.resourcesRow}>
+           <TouchableOpacity style={styles.resourceCard}>
+              <Shield size={24} color="#39FF14" />
+              <Text style={styles.resourceText}>KYC Portal</Text>
+           </TouchableOpacity>
+           <TouchableOpacity style={styles.resourceCard}>
+              <Clock size={24} color="#39FF14" />
+              <Text style={styles.resourceText}>Work Logs</Text>
+           </TouchableOpacity>
+        </View>
 
         {/* System Health */}
         <Text style={styles.sectionTitle}>SYSTEM STATUS</Text>
@@ -187,6 +259,73 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     marginBottom: 16,
   },
+  newLeadAlert: {
+    backgroundColor: '#0A0A0A',
+    borderRadius: 32,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: '#39FF14',
+    marginBottom: 32,
+  },
+  newLeadHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  newLeadTitle: {
+    color: '#39FF14',
+    fontSize: 10,
+    fontWeight: '900',
+    letterSpacing: 2,
+  },
+  newLeadTimer: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '900',
+    backgroundColor: '#333',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  bikeModelLarge: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  decisionRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  decisionBtn: {
+    flex: 1,
+    height: 60,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  rejectBtn: {
+    backgroundColor: '#ff444411',
+    borderWidth: 1,
+    borderColor: '#ff444433',
+  },
+  acceptBtn: {
+    backgroundColor: '#39FF14',
+  },
+  rejectBtnText: {
+    color: '#ff4444',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  acceptBtnText: {
+    color: '#000',
+    fontSize: 12,
+    fontWeight: '900',
+  },
   leadCard: {
     backgroundColor: '#0A0A0A',
     borderRadius: 32,
@@ -247,6 +386,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#ffffff0a',
     paddingTop: 20,
+    gap: 12,
+  },
+  navigateBtn: {
+    backgroundColor: '#39FF14',
+    height: 56,
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  navigateBtnText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '900',
   },
   viewBtn: {
     flexDirection: 'row',
@@ -257,6 +411,26 @@ const styles = StyleSheet.create({
     color: '#39FF14',
     fontSize: 14,
     fontWeight: '900',
+  },
+  resourcesRow: {
+     flexDirection: 'row',
+     gap: 12,
+     marginBottom: 32,
+  },
+  resourceCard: {
+     flex: 1,
+     backgroundColor: '#0A0A0A',
+     borderWidth: 1,
+     borderColor: '#ffffff0a',
+     borderRadius: 24,
+     padding: 24,
+     alignItems: 'center',
+     gap: 12,
+  },
+  resourceText: {
+     color: '#fff',
+     fontSize: 12,
+     fontWeight: 'bold',
   },
   healthCard: {
     backgroundColor: '#0A0A0A',

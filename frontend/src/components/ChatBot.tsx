@@ -27,16 +27,23 @@ export default function ChatBot() {
     setInput('');
     setIsTyping(true);
 
-    // AI Logic with Human Escalation Simulation
-    setTimeout(() => {
-      let botResponse = "I can definitely help with that. Our smart dispatch system can find a mechanic for your bike within 60 minutes. Our base visiting and diagnosis fee is ₹200. Would you like me to guide you to the booking form?";
+    // Simulate RAG call to n8n
+    setTimeout(async () => {
+      let botResponse = "I'm analyzing your history... GearFlow AI is here.";
       
-      const query = input.toLowerCase();
-      if (query.includes('human') || query.includes('agent') || query.includes('talk to someone')) {
-        botResponse = "I understand. I'm connecting you to a live GearFlow coordinator now. They will join this chat in a moment. Please stay online.";
-        // In production: trigger escalation webhook
-      } else if (query.includes('refund') || query.includes('cancel')) {
-        botResponse = "To process a refund or cancellation, I need to verify your Order ID. Please provide it, or I can connect you to our support team.";
+      try {
+        // In production: const response = await fetch('N8N_WEBHOOK_URL', { method: 'POST', body: JSON.stringify({ query: input, user_id: 'USER_123' }) });
+        const query = input.toLowerCase();
+        
+        if (query.includes('last service') || query.includes('my history')) {
+          botResponse = "Based on your history, your last service was a Full Engine Tune-up on May 01, 2026 for your RE Classic 350. You are all set for another 2,500km!";
+        } else if (query.includes('human') || query.includes('agent')) {
+          botResponse = "I'm escalating your request to a live coordinator. Please stay on the line.";
+        } else {
+          botResponse = "GearFlow AI: I can help you with that. Our diagnosis fee is ₹200. Should I book a slot for your Classic 350?";
+        }
+      } catch (e) {
+        botResponse = "I'm having trouble connecting to my knowledge base, but I can still help with basic booking!";
       }
 
       const assistantMessage = { role: 'assistant', content: botResponse };

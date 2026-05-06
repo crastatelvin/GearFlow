@@ -29,6 +29,12 @@ export default function LandingPage() {
               <a href="#about" className="hover:text-brand-neon transition-colors">How it Works</a>
               <a href="#fleet" className="hover:text-brand-neon transition-colors">Mechanics</a>
               <button 
+                className="hover:text-white transition-colors flex items-center gap-2"
+                onClick={() => window.location.href = '/login'}
+              >
+                <User className="w-4 h-4 text-brand-neon" /> LOGIN
+              </button>
+              <button 
                 onClick={() => setIsBookingOpen(true)}
                 className="px-6 py-2 bg-brand-neon text-black font-bold rounded-full hover:scale-105 transition-transform"
               >

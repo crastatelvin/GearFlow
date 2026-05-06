@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS users (
     full_name TEXT NOT NULL,
     phone_number TEXT UNIQUE NOT NULL,
     email TEXT UNIQUE,
+    password_hash TEXT,
+    role TEXT DEFAULT 'CUSTOMER' CHECK (role IN ('CUSTOMER', 'ADMIN')),
     saved_vehicles JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

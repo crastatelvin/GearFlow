@@ -1,0 +1,116 @@
+# System Architecture: Autonomous Bike Service
+
+This document outlines the complete technological architecture and orchestration plan, incorporating all the approved business rules (e.g., 200 upfront charge, weekly mechanic payouts, liability agreements).
+
+## 1. Where We Use n8n (Orchestration & Webhooks)
+n8n will act as the "nervous system" of your company, connecting different microservices without needing hardcoded logic everywhere.
+
+*   **Lead Intake & Upfront Billing:**
+    *   *Trigger:* Webhook from Next.js Frontend.
+    *   *Action:* Validate input -> Generate 200 booking charge link (Stripe/Razorpay) -> Wait for Webhook payment confirmation -> Create Lead in DB.
+*   **The "Dispatcher" Loop:**
+    *   *Trigger:* Lead Paid.
+    *   *Action:* Query DB for nearest available mechanics.
+    *   *Logic:* Broadcast via WebSockets -> If accepted -> Update DB -> Trigger WhatsApp/Email API to notify customer. If no response -> Trigger IVR Call to Customer.
+*   **Fraud & Hold Workflows:**
+    *   *Trigger:* Mechanic arrives but customer cancels.
+    *   *Logic:* n8n requests Cancellation OTP. If successful -> Calculate refund minus the 200 visit charge -> Process refund.
+*   **Cron Jobs (Weekly Payouts):**
+    *   *Trigger:* Every Sunday at Midnight.
+    *   *Action:* Aggregate all "Completed" tasks for each mechanic -> Calculate 70% of Labor -> Trigger API to disburse funds to virtual wallets/bank accounts.
+
+## 2. Where We Use RAG (Retrieval-Augmented Generation)
+RAG will be the "brain" of the operation, giving your AI agents contextual knowledge.
+
+*   **Customer Support Chatbot (Front-end):**
+    *   *RAG Source:* Pricing matrices, service area maps, operating hours, FAQ documents.
+    *   *Use:* If a customer asks "Do you service Honda City in Downtown?", the bot retrieves the location boundaries and responds accurately, blocking hallucinated promises.
+*   **Mechanic "Copilot" (Mechanic App):**
+    *   *RAG Source:* Vehicle manuals, historical repair notes, master# Phase 9: Advanced Intelligence & User Persistence
+
+This phase focuses on transitioning from simulations to real-world infrastructure (Google Maps) and personalizing the AI experience through User Authentication and Contextual RAG.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Google Maps API Key:** This implementation requires a valid Google Maps API Key with "Maps JavaScript API" enabled. I will provide a `.env` placeholder for you to fill.
+
+> [!NOTE]
+> **n8n RAG Strategy:** I am recommending the **n8n RAG Pipeline** as it is highly flexible for future updates (e.g., adding WhatsApp support) and integrates natively with our existing orchestration layer.
+
+---
+
+## Proposed Changes
+
+### 1. Database & Authentication
+#### [MODIFY] [init.sql](file:///c:/Users/Administrator/Desktop/temp/backend/src/db/init.sql)
+- Add `users` table (id, name, phone, email, password_hash).
+- Add `user_id` foreign key to `orders` table to track service history.
+
+#### [NEW] [AuthService.js](file:///c:/Users/Administrator/Desktop/temp/backend/src/services/AuthService.js)
+- JWT-based login and registration logic.
+- Secure password hashing using `bcrypt`.
+
+### 2. Frontend User Experience
+#### [MODIFY] [page.tsx](file:///c:/Users/Administrator/Desktop/temp/frontend/src/app/page.tsx)
+- Add "Login / Dashboard" button to the Navbar.
+- Implement conditional rendering (Show "Dashboard" if logged in).
+
+#### [NEW] [CustomerDashboard](file:///c:/Users/Administrator/Desktop/temp/frontend/src/app/dashboard/page.tsx)
+- A clean, neon-themed user portal showing active and past bike services.
+
+#### [MODIFY] [ChatBot.tsx](file:///c:/Users/Administrator/Desktop/temp/frontend/src/components/ChatBot.tsx)
+- Update to send `user_token` to the n8n RAG endpoint so the AI knows the user's history.
+
+### 3. n8n RAG Pipeline
+#### [NEW] [rag_workflow.json](file:///c:/Users/Administrator/Desktop/temp/infra/n8n/rag_workflow.json)
+- Define the node structure for:
+  1. Receiving query + User ID.
+  2. Querying PostgreSQL for user service history.
+  3. Querying Vector Store (Pinecone/Chroma) for service knowledge.
+  4. Prompting OpenAI with combined context.
+
+### 4. Admin Real Google Maps
+#### [MODIFY] [page.tsx](file:///c:/Users/Administrator/Desktop/temp/admin/src/app/page.tsx)
+- Replace CSS-based mock map with `@react-google-maps/api`.
+- Implement live mechanic pin clustering.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- `npm run test:auth`: Verify user registration and login flows.
+- `npm run test:rag`: Mock a user query and verify the AI includes their history in the response.
+
+### Manual Verification
+- **Login Flow:** Register a new user and verify they see an empty dashboard.
+- **Service History:** Manually insert an order in the DB and check if the user dashboard updates.
+- **Maps:** Verify Google Maps renders (using placeholder key initially).
+*   **Primary Database:** PostgreSQL (Supabase or Neon). Relational data is critical here (Users, Leads, Mechanics, Wallet Transactions).
+*   **Real-time Layer:** Socket.io or Supabase Realtime for live mechanic tracking and chat.
+
+### C. AI & Automation Layer
+*   **Workflow Engine:** self-hosted n8n.
+*   **LLM Provider:** Groq or NVIDIA NIM (for ultra-fast chatbot responses), OpenAI (for complex reasoning/vision tasks).
+*   **Vector DB:** Pinecone or Qdrant (for RAG).
+
+## 4. Improvements & Suggestions
+
+> [!TIP]
+> To truly make this a "fully autonomous company", consider these architectural enhancements:
+
+1.  **Event-Driven "State Machine":** 
+    Instead of simple database updates, treat every order as a State Machine (e.g., `PENDING` -> `MECHANIC_DISPATCHED` -> `DIAGNOSING` -> `QUOTE_APPROVED` -> `WORKING` -> `PAID`). This prevents a ticket from skipping a step (like skipping the quote approval) and ensures strict zero-trust governance.
+2.  **Mechanic Wallet "Negative Balance" Trap:** 
+    Since mechanics bring their own parts, what if a mechanic collects $500 cash from a customer (for $100 labor, $400 parts)? The company is owed $30 (30% of labor). The mechanic's virtual wallet should go into the negative. If the wallet hits -$100, they are automatically suspended from receiving new leads until they clear their debt to the company.
+3.  **Customer "Ghosting" Defense:** 
+    If the mechanic arrives and the customer isn't responding, the mechanic clicks "Customer Unreachable" in the app. n8n should automatically trigger an IVR call. If the IVR fails, the GPS coordinates are verified, the mechanic is released, and the customer forfeits their 200 visit fee.
+
+---
+
+## Next Steps / User Review Required
+
+Does this architecture align with your vision for the company? 
+
+If approved, our next task will be to design the **Database Schema** and map out the exact **State Machine logic** for an order, before any code is written.

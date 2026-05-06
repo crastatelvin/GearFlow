@@ -21,6 +21,9 @@ import {
   Clock
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { GoogleMap, useJsApiLoader, Marker } from '@react-google-maps/api';
+
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'YOUR_KEY_HERE';
 
 const chartData = [
   { name: 'Mon', revenue: 4000, orders: 24 },
@@ -319,13 +322,25 @@ function MechanicsView() {
 // --- Map View ---
 function MapView() {
   const [selectedMechanic, setSelectedMechanic] = useState<string | null>(null);
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY
+  });
 
   const activeMechanics = [
-    { id: 1, name: 'Alex G.', pos: { top: '30%', left: '40%' }, status: 'WORKING' },
-    { id: 2, name: 'John P.', pos: { top: '60%', left: '20%' }, status: 'DISPATCHED' },
-    { id: 3, name: 'Sam S.', pos: { top: '45%', left: '70%' }, status: 'AVAILABLE' },
-    { id: 4, name: 'Mike B.', pos: { top: '80%', left: '55%' }, status: 'AVAILABLE' },
+    { id: 1, name: 'Alex G.', lat: 28.6139, lng: 77.2090, status: 'WORKING' },
+    { id: 2, name: 'John P.', lat: 28.6239, lng: 77.2190, status: 'DISPATCHED' },
+    { id: 3, name: 'Sam S.', lat: 28.6039, lng: 77.1990, status: 'AVAILABLE' },
+    { id: 4, name: 'Mike B.', lat: 28.6339, lng: 77.2290, status: 'AVAILABLE' },
   ];
+
+  const mapContainerStyle = {
+    width: '100%',
+    height: '650px',
+    borderRadius: '1.5rem'
+  };
+
+  const center = { lat: 28.6139, lng: 77.2090 };
 
   return (
     <div className="space-y-8">
@@ -338,49 +353,44 @@ function MapView() {
       </div>
 
       <div className="glass rounded-3xl h-[650px] border-white/5 relative overflow-hidden bg-[#050505]">
-        {/* Mock Map Background Grid */}
-        <div className="absolute inset-0 opacity-10 pointer-events-none" 
-             style={{ backgroundImage: 'radial-gradient(#39FF14 0.5px, transparent 0.5px)', backgroundSize: '30px 30px' }} />
-        
-        {/* Simulated Road Lines */}
-        <div className="absolute inset-0 opacity-5 pointer-events-none">
-           <div className="absolute top-1/2 w-full h-[2px] bg-white" />
-           <div className="absolute left-1/3 h-full w-[2px] bg-white" />
-           <div className="absolute left-2/3 h-full w-[2px] bg-white" />
-        </div>
-
-        {activeMechanics.map((m) => (
-          <motion.div
-            key={m.id}
-            initial={m.pos}
-            animate={{ 
-              top: [m.pos.top, `${parseInt(m.pos.top) + (Math.random() * 2 - 1)}%`],
-              left: [m.pos.left, `${parseInt(m.pos.left) + (Math.random() * 2 - 1)}%`]
+        {isLoaded ? (
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={center}
+            zoom={13}
+            options={{
+              styles: [
+                { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+                { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+                { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+                // ... Dark theme styles for Google Maps
+              ],
+              disableDefaultUI: true,
             }}
-            transition={{ duration: 5, repeat: Infinity, repeatType: 'reverse' }}
-            onClick={() => setSelectedMechanic(m.name)}
-            className="absolute cursor-pointer group"
-            style={m.pos}
           >
-            <div className="relative">
-               <motion.div 
-                 animate={{ scale: [1, 2, 1], opacity: [0.5, 0, 0.5] }}
-                 transition={{ duration: 2, repeat: Infinity }}
-                 className={`absolute -inset-4 rounded-full ${m.status === 'AVAILABLE' ? 'bg-brand-neon' : 'bg-blue-500'}`}
-               />
-               <div className={`w-4 h-4 rounded-full border-2 border-black shadow-lg ${
-                 m.status === 'AVAILABLE' ? 'bg-brand-neon' : 'bg-blue-500'
-               }`} />
-               
-               {/* Label */}
-               <div className="absolute top-6 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black/80 backdrop-blur-md border border-white/10 px-2 py-1 rounded text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-opacity">
-                 {m.name} • {m.status}
-               </div>
-            </div>
-          </motion.div>
-        ))}
+            {activeMechanics.map(m => (
+              <Marker 
+                key={m.id} 
+                position={{ lat: m.lat, lng: m.lng }}
+                onClick={() => setSelectedMechanic(m.name)}
+                icon={{
+                  path: google.maps.SymbolPath.CIRCLE,
+                  fillColor: m.status === 'AVAILABLE' ? '#39FF14' : '#3B82F6',
+                  fillOpacity: 1,
+                  strokeWeight: 2,
+                  strokeColor: '#000',
+                  scale: 8
+                }}
+              />
+            ))}
+          </GoogleMap>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500 font-bold animate-pulse">LOADING REAL GOOGLE MAPS...</p>
+          </div>
+        )}
 
-        {/* Mechanic Info Overlay */}
+        {/* Info Overlay */}
         <AnimatePresence>
           {selectedMechanic && (
             <motion.div 
@@ -402,22 +412,10 @@ function MapView() {
                    <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Heading</p>
                    <p className="text-sm font-bold">North-East (Sector 5)</p>
                 </div>
-                <button className="w-full py-3 bg-white/5 hover:bg-brand-neon hover:text-black rounded-xl text-xs font-bold transition-all">
-                  VIEW JOB DETAILS
-                </button>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Map Legend */}
-        <div className="absolute bottom-8 left-8 glass px-4 py-3 rounded-xl border-white/10 flex items-center gap-4">
-           <MapIcon size={20} className="text-brand-neon" />
-           <div>
-              <p className="text-[10px] font-bold text-white uppercase tracking-tighter">Live Tracker</p>
-              <p className="text-[9px] text-gray-500 font-bold italic uppercase tracking-tighter">4 Active Units</p>
-           </div>
-        </div>
       </div>
     </div>
   );

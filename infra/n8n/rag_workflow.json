@@ -1,0 +1,85 @@
+{
+  "name": "GearFlow_RAG_Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-query",
+        "options": {}
+      },
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM orders WHERE user_id = {{$node[\"Webhook\"].json[\"body\"][\"user_id\"]}} LIMIT 5;"
+      },
+      "name": "Get User History",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [300, 200]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4-o",
+        "prompt": "=Answer the user query: {{$node[\"Webhook\"].json[\"body\"][\"query\"]}}\n\nUse this context if relevant:\nUser Service History: {{JSON.stringify($node[\"Get User History\"].json)}}\nCompany Knowledge: {{$node[\"Vector Store Query\"].json[\"text\"]}}",
+        "options": {
+          "systemMessage": "You are GearFlow AI, a helpful autonomous bike service assistant. You have access to the user's specific history and company policies."
+        }
+      },
+      "name": "OpenAI Chat Model",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "operation": "retrieve",
+        "collectionName": "gearflow_knowledge",
+        "query": "={{$node[\"Webhook\"].json[\"body\"][\"query\"]}}"
+      },
+      "name": "Vector Store Query",
+      "type": "n8n-nodes-base.pinecone",
+      "typeVersion": 1,
+      "position": [300, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$node[\"OpenAI Chat Model\"].json[\"content\"]}}"
+      },
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [800, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "Get User History", "type": "main", "index": 0 },
+          { "node": "Vector Store Query", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Get User History": {
+      "main": [
+        [ { "node": "OpenAI Chat Model", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Vector Store Query": {
+      "main": [
+        [ { "node": "OpenAI Chat Model", "type": "main", "index": 0 } ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "main": [
+        [ { "node": "Respond to Webhook", "type": "main", "index": 0 } ]
+      ]
+    }
+  }
+}

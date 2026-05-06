@@ -1,0 +1,129 @@
+{
+  "name": "GearFlow_Smart_Dispatch_V2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dispatch-v2",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM mechanics WHERE status = 'AVAILABLE' AND wallet_balance > -100 ORDER BY rating DESC LIMIT 5"
+      },
+      "id": "fetch-mechanics",
+      "name": "Fetch Available Mechanics",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "neon-db-creds"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 60,
+        "unit": "seconds"
+      },
+      "id": "wait-60s",
+      "name": "Wait for Acceptance",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$node[\"Wait for Acceptance\"].data[\"accepted\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-acceptance",
+      "name": "Is Accepted?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "orders",
+        "updateKey": "id",
+        "dataFields": {
+          "mechanic_id": "={{$node[\"Fetch Available Mechanics\"].data[\"id\"]}}",
+          "status": "DISPATCHED"
+        }
+      },
+      "id": "update-order",
+      "name": "Update Order Status",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1050, 200],
+      "credentials": {
+        "postgres": {
+          "id": "neon-db-creds"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook-trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Available Mechanics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Available Mechanics": {
+      "main": [
+        [
+          {
+            "node": "Wait for Acceptance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Acceptance": {
+      "main": [
+        [
+          {
+            "node": "Is Accepted?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Accepted?": {
+      "main": [
+        [
+          {
+            "node": "Update Order Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  }
+}

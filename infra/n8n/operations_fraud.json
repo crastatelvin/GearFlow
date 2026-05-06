@@ -1,0 +1,150 @@
+{
+  "name": "GearFlow_Operations_Fraud_Verification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mechanic-complete",
+        "options": {}
+      },
+      "id": "webhook-complete",
+      "name": "Work Completed Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "message": [
+            {
+              "role": "user",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "Verify this is an authentic bike part packaging and it has been clearly opened/destroyed. Respond with JSON { 'pass': true/false, 'reason': '...' }."
+                },
+                {
+                  "type": "image_url",
+                  "image_url": "={{$node[\"Work Completed Trigger\"].data[\"photoUrl\"]}}"
+                }
+              ]
+            }
+          ]
+        },
+        "responseFormat": "json_object"
+      },
+      "id": "ai-vision-verification",
+      "name": "AI Vision Part Verification",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-creds"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{JSON.parse($node[\"AI Vision Part Verification\"].data[\"choices\"][0][\"message\"][\"content\"])[\"pass\"]}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "check-fraud",
+      "name": "Verification Pass?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "orders",
+        "updateKey": "id",
+        "dataFields": {
+          "status": "PAYMENT_PENDING"
+        }
+      },
+      "id": "update-success",
+      "name": "Set Payment Pending",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 200],
+      "credentials": {
+        "postgres": {
+          "id": "neon-db-creds"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "fraud_logs",
+        "dataFields": {
+          "order_id": "={{$node[\"Work Completed Trigger\"].data[\"orderId\"]}}",
+          "flag_type": "AI_VISION_FAIL",
+          "evidence": "={{$node[\"AI Vision Part Verification\"].data[\"choices\"][0][\"message\"][\"content\"]}}"
+        }
+      },
+      "id": "log-fraud",
+      "name": "Log Fraud Attempt",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 400],
+      "credentials": {
+        "postgres": {
+          "id": "neon-db-creds"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "webhook-complete": {
+      "main": [
+        [
+          {
+            "node": "AI Vision Part Verification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Vision Part Verification": {
+      "main": [
+        [
+          {
+            "node": "Verification Pass?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verification Pass?": {
+      "main": [
+        [
+          {
+            "node": "Set Payment Pending",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Fraud Attempt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

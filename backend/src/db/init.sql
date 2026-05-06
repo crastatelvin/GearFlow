@@ -33,8 +33,11 @@ CREATE TABLE IF NOT EXISTS mechanics (
 -- ORDERS table (State Machine)
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    customer_name TEXT,
+    phone_number TEXT,
     user_id UUID REFERENCES users(id),
     mechanic_id UUID REFERENCES mechanics(id),
+    mechanic_name TEXT,
     status TEXT DEFAULT 'PENDING_FEE',
     service_tier TEXT DEFAULT 'STANDARD' CHECK (service_tier IN ('STANDARD', 'PREMIUM')),
     is_premium BOOLEAN DEFAULT FALSE,
@@ -91,3 +94,21 @@ CREATE TABLE IF NOT EXISTS fraud_logs (
     ai_resolution TEXT DEFAULT 'PENDING',
     flagged_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Enable pgvector extension
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- KNOWLEDGE_BASE table for RAG
+CREATE TABLE IF NOT EXISTS knowledge_base (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    content TEXT NOT NULL,
+    metadata JSONB DEFAULT '{}'::jsonb,
+    embedding VECTOR(1536), -- Dimension for OpenAI text-embedding-3-small
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Seed some technical data
+INSERT INTO knowledge_base (content, metadata) VALUES 
+('Royal Enfield Classic 350 chain tension should be between 25mm to 30mm. If the chain is clicking, check for loose links or lack of lubrication.', '{"model": "Classic 350", "category": "maintenance"}'),
+('Engine oil for Royal Enfield should be 15W50 API SL Grade or higher. Change every 10,000 km after the first service.', '{"model": "General", "category": "oil"}'),
+('Tire pressure for commuter bikes: Front 25 PSI, Rear 32 PSI (Solo). For pillion riding, increase Rear to 35 PSI.', '{"model": "General", "category": "tires"}');

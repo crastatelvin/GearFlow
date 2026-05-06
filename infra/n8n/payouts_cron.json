@@ -1,0 +1,104 @@
+{
+  "name": "GearFlow_Weekly_Payouts_Cron",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "expression": "0",
+              "weekday": "0"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Every Sunday at Midnight",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, full_name, wallet_balance FROM mechanics WHERE wallet_balance > 0"
+      },
+      "id": "fetch-balances",
+      "name": "Fetch Mechanics with Balance",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "neon-db-creds"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Processing Payout for {{ $node[\"Fetch Mechanics with Balance\"].json[\"full_name\"] }}\nAmount: ₹{{ $node[\"Fetch Mechanics with Balance\"].json[\"wallet_balance\"] }}"
+      },
+      "id": "payout-log",
+      "name": "Log Payout Action",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "mechanics",
+        "updateKey": "id",
+        "dataFields": {
+          "wallet_balance": 0
+        }
+      },
+      "id": "reset-balance",
+      "name": "Reset Mechanic Balance",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 300],
+      "credentials": {
+        "postgres": {
+          "id": "neon-db-creds"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "cron-trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Mechanics with Balance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Mechanics with Balance": {
+      "main": [
+        [
+          {
+            "node": "Log Payout Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Payout Action": {
+      "main": [
+        [
+          {
+            "node": "Reset Mechanic Balance",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

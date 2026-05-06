@@ -124,6 +124,29 @@ export default function AdminDashboard() {
 
 // --- Dashboard Home ---
 function DashboardHome() {
+  const [stats, setStats] = useState({
+    liveLeads: 0,
+    activeMechanics: 0,
+    dailyRevenue: 0,
+    fraudAlerts: 0
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/admin/stats');
+        const data = await response.json();
+        setStats(data);
+      } catch (e) {
+        console.error("Stats fetch failed", e);
+      }
+    };
+
+    fetchStats();
+    const interval = setInterval(fetchStats, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-end">
@@ -137,10 +160,10 @@ function DashboardHome() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Live Leads" value="24" trend="+12%" icon={<Zap className="text-brand-neon" />} />
-        <StatCard label="Active Mechanics" value="156" trend="+3" icon={<Users className="text-brand-neon" />} />
-        <StatCard label="Daily Revenue" value="₹42,850" trend="+18%" icon={<TrendingUp className="text-brand-neon" />} />
-        <StatCard label="Fraud Alerts" value="0" trend="0" icon={<AlertTriangle className="text-yellow-500" />} />
+        <StatCard label="Live Leads" value={stats.liveLeads.toString()} trend="+12%" icon={<Zap className="text-brand-neon" />} />
+        <StatCard label="Active Mechanics" value={stats.activeMechanics.toString()} trend="+3" icon={<Users className="text-brand-neon" />} />
+        <StatCard label="Daily Revenue" value={`₹${stats.dailyRevenue.toLocaleString()}`} trend="+18%" icon={<TrendingUp className="text-brand-neon" />} />
+        <StatCard label="Fraud Alerts" value={stats.fraudAlerts.toString()} trend="0" icon={<AlertTriangle className="text-yellow-500" />} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">

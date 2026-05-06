@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import { query } from './db/index.js';
+import AuthService from './services/AuthService.js';
 
 dotenv.config();
 
@@ -15,12 +17,6 @@ app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
 
-import AuthService from './services/AuthService.js';
-
-// Mock DB for simulation
-const users = [];
-const orders = [];
-
 // Routes
 app.get('/health', (req, res) => {
   res.json({ status: 'GearFlow Backend is running', timestamp: new Date() });
@@ -30,99 +26,214 @@ app.get('/health', (req, res) => {
 app.post('/orders', async (req, res) => {
   const { name, phone, vehicle, lat, lng, tier } = req.body;
   
-  const newOrder = {
-    id: Math.random().toString(36).substr(2, 9),
-    customer_name: name,
-    phone_number: phone,
-    vehicle_details: vehicle,
-    location_lat: lat,
-    location_lng: lng,
-    service_tier: tier,
-    is_premium: tier === 'PREMIUM',
-    status: tier === 'PREMIUM' ? 'PENDING_FEE' : 'PENDING_DISPATCH',
-    created_at: new Date()
-  };
-  
-  orders.unshift(newOrder); 
-
-  // --- n8n Dispatch Trigger ---
   try {
-    // In production: await fetch('N8N_DISPATCH_WEBHOOK_URL', { method: 'POST', body: JSON.stringify(newOrder) });
-    console.log(`[n8n] Triggering smart dispatch for Order ${newOrder.id}`);
-  } catch (e) {
-    console.error("n8n Dispatch failed", e);
-  }
+    const result = await query(
+      'INSERT INTO orders (customer_name, phone_number, vehicle_details, location_lat, location_lng, service_tier, is_premium, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [name, phone, vehicle, lat || 28.6139, lng || 77.2090, tier, tier === 'PREMIUM', tier === 'PREMIUM' ? 'PENDING_FEE' : 'PENDING_DISPATCH']
+    );
 
-  res.json({ success: true, order: newOrder });
+    const newOrder = result.rows[0];
+
+    // --- n8n Dispatch Trigger ---
+    try {
+      await fetch('http://localhost:5678/webhook-test/dispatch-lead', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder) 
+      });
+      console.log(`[n8n] Triggering smart dispatch for Order ${newOrder.id}`);
+    } catch (e) {
+      console.error("n8n Dispatch failed", e);
+    }
+
+    res.json({ success: true, order: newOrder });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create order' });
+  }
 });
 
 // Update Dispatch (Called by n8n or Admin)
-app.patch('/orders/:id/dispatch', (req, res) => {
+app.patch('/orders/:id/dispatch', async (req, res) => {
   const { id } = req.params;
   const { mechanic_name, status } = req.body;
   
-  const order = orders.find(o => o.id === id);
-  if (order) {
-    order.mechanic_name = mechanic_name;
-    order.status = status || 'DISPATCHED';
-    order.updated_at = new Date();
-    return res.json({ success: true, order });
+  try {
+    const result = await query(
+      'UPDATE orders SET mechanic_name = $1, status = $2, updated_at = CURRENT_TIMESTAMP WHERE id = $3 OR (id::text = $3) RETURNING *',
+      [mechanic_name, status || 'DISPATCHED', id]
+    );
+
+    if (result.rows.length > 0) {
+      return res.json({ success: true, order: result.rows[0] });
+    }
+    res.status(404).json({ error: 'Order not found' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Update failed' });
   }
-  res.status(404).json({ error: 'Order not found' });
 });
 
 // Get Admin Orders (Live Sync)
-app.get('/admin/orders', (req, res) => {
-  res.json(orders);
+app.get('/admin/orders', async (req, res) => {
+  try {
+    const result = await query('SELECT * FROM orders ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Fetch failed' });
+  }
+});
+
+// Get Admin Stats (Real Database Aggregates)
+app.get('/admin/stats', async (req, res) => {
+  try {
+    const leadsCount = await query("SELECT COUNT(*) FROM orders WHERE status NOT IN ('COMPLETED', 'CANCELLED')");
+    const mechanicsCount = await query("SELECT COUNT(*) FROM mechanics WHERE status IN ('AVAILABLE', 'WORKING')");
+    const revenueSum = await query("SELECT SUM(amount) FROM payments WHERE status = 'SUCCESS' AND paid_at >= CURRENT_DATE");
+    const fraudCount = await query("SELECT COUNT(*) FROM fraud_logs WHERE flagged_at >= CURRENT_DATE");
+
+    res.json({
+      liveLeads: parseInt(leadsCount.rows[0].count),
+      activeMechanics: parseInt(mechanicsCount.rows[0].count),
+      dailyRevenue: parseFloat(revenueSum.rows[0].sum || 0),
+      fraudAlerts: parseInt(fraudCount.rows[0].count)
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Stats fetch failed' });
+  }
 });
 
 // User Registration
 app.post('/auth/register', async (req, res) => {
   const { name, email, password, phone } = req.body;
-  const hashedPassword = await AuthService.hashPassword(password);
   
-  const newUser = {
-    id: Math.random().toString(36).substr(2, 9),
-    full_name: name,
-    email,
-    password_hash: hashedPassword,
-    phone_number: phone,
-    role: 'CUSTOMER'
-  };
-  
-  users.push(newUser);
-  const token = AuthService.generateToken(newUser);
-  
-  res.json({ success: true, token, user: { name, email, role: 'CUSTOMER' } });
+  try {
+    const hashedPassword = await AuthService.hashPassword(password);
+    const result = await query(
+      'INSERT INTO users (full_name, email, password_hash, phone_number, role) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [name, email, hashedPassword, phone, 'CUSTOMER']
+    );
+    
+    const newUser = result.rows[0];
+    const token = AuthService.generateToken(newUser);
+    
+    res.json({ success: true, token, user: { name: newUser.full_name, email: newUser.email, role: 'CUSTOMER' } });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
 });
 
 // User Login
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
-  const user = users.find(u => u.email === email);
   
-  if (!user || !(await AuthService.comparePassword(password, user.password_hash))) {
-    return res.status(401).json({ error: 'Invalid credentials' });
+  try {
+    const result = await query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = result.rows[0];
+    
+    if (!user || !(await AuthService.comparePassword(password, user.password_hash))) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const token = AuthService.generateToken(user);
+    res.json({ success: true, token, user: { name: user.full_name, email: user.email, role: user.role } });
+  } catch (error) {
+    res.status(500).json({ error: 'Login failed' });
   }
-  
-  const token = AuthService.generateToken(user);
-  res.json({ success: true, token, user: { name: user.full_name, email, role: user.role } });
 });
 
-// User Service History (Mocked)
-app.get('/user/history', (req, res) => {
-  // In production, verify token and query DB
-  const mockHistory = [
-    { id: '1', date: '2026-05-01', service: 'Oil Change', status: 'COMPLETED', bike: 'Royal Enfield Classic 350' },
-    { id: '2', date: '2026-04-15', service: 'Chain Lubrication', status: 'COMPLETED', bike: 'Royal Enfield Classic 350' }
-  ];
-  res.json(mockHistory);
+// User Service History
+app.get('/user/history', async (req, res) => {
+  try {
+    const result = await query('SELECT * FROM orders ORDER BY created_at DESC LIMIT 5');
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Fetch failed' });
+  }
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Mechanic: Arrived at Location
+app.post('/mechanic/arrive', async (req, res) => {
+  const { orderId } = req.body;
+  try {
+    await query("UPDATE orders SET status = 'ARRIVED', updated_at = CURRENT_TIMESTAMP WHERE id = $1", [orderId]);
+    
+    // Trigger n8n Operations workflow
+    await fetch('http://localhost:5678/webhook-test/mechanic-arrive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, event: 'ARRIVED' })
+    });
+    
+    res.json({ success: true, status: 'ARRIVED' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to update arrival' });
+  }
+});
+
+// Mechanic: Submit Diagnosis Quote
+app.post('/mechanic/quote', async (req, res) => {
+  const { orderId, labor, parts, total } = req.body;
+  try {
+    // Store quote in metadata or temporary columns (using a simple update for now)
+    await query("UPDATE orders SET status = 'PENDING_APPROVAL', updated_at = CURRENT_TIMESTAMP WHERE id = $1", [orderId]);
+    
+    // Trigger n8n Customer Approval workflow
+    await fetch('http://localhost:5678/webhook-test/mechanic-quote', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, labor, parts, total })
+    });
+    
+    res.json({ success: true, message: 'Quote submitted for customer approval' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to submit quote' });
+  }
+});
+
+// Mechanic: Work Completed (Triggers AI Fraud Check)
+app.post('/mechanic/complete', async (req, res) => {
+  const { orderId, photoUrl } = req.body;
+  try {
+    // Trigger n8n Fraud workflow
+    await fetch('http://localhost:5678/webhook-test/mechanic-complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, photoUrl })
+    });
+    
+    res.json({ success: true, message: 'Work completion submitted for AI verification' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to submit completion' });
+  }
+});
+
+// AI Chat Assistant (RAG Bridge)
+app.post('/chat', async (req, res) => {
+  const { message, userId } = req.body;
+  
+  try {
+    // Trigger n8n RAG workflow
+    const response = await fetch('http://localhost:5678/webhook-test/rag-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, userId })
+    });
+    
+    const data = await response.json();
+    res.json({ response: data.output || "I've processed your request but couldn't find a specific answer. Alex will check it out manually!" });
+  } catch (error) {
+    console.error("RAG fetch failed", error);
+    res.json({ response: "My diagnostic systems are currently offline. Please try again in a few minutes!" });
+  }
 });
 
 app.listen(PORT, () => {

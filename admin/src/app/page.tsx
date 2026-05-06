@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -184,14 +184,24 @@ function DashboardHome() {
 
 // --- Orders View ---
 function OrdersView() {
+  const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
 
-  const orders = [
-    { id: '#GF-9283', customer: 'Rahul Sharma', vehicle: 'Bullet 350', status: 'DISPATCHED', amount: '₹1,250', time: '12:45 PM', mechanic: 'Alex G.' },
-    { id: '#GF-9284', customer: 'Anita Roy', vehicle: 'Activa 6G', status: 'ARRIVED', amount: '₹450', time: '01:15 PM', mechanic: 'John P.' },
-    { id: '#GF-9285', customer: 'Vikram Singh', vehicle: 'KTM Duke', status: 'WORKING', amount: '₹3,200', time: '01:30 PM', mechanic: 'Sam S.' },
-    { id: '#GF-9286', customer: 'Sneha Kapur', vehicle: 'Vespa VXL', status: 'PENDING_FEE', amount: '₹200', time: '02:00 PM', mechanic: null },
-  ];
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch('http://localhost:3001/admin/orders');
+        const data = await response.json();
+        setOrders(data);
+      } catch (e) {
+        console.error("Fetch failed", e);
+      }
+    };
+
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const mechanics = ['Alex Gearhead', 'John Piston', 'Sam Spark', 'Mike Bolt'];
 
@@ -200,7 +210,7 @@ function OrdersView() {
       <div className="flex justify-between items-end">
         <h1 className="text-4xl font-black tracking-tighter">ACTIVE <span className="text-brand-neon italic">ORDERS</span></h1>
         <div className="flex gap-2">
-           <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold text-gray-500 uppercase">Auto-Dispatch: ON</span>
+           <span className="px-3 py-1 bg-white/5 border border-white/10 rounded-lg text-[10px] font-bold text-gray-500 uppercase">Live Sync: ON</span>
         </div>
       </div>
 
@@ -208,68 +218,67 @@ function OrdersView() {
         <table className="w-full text-left">
           <thead className="bg-white/5 border-b border-white/5 text-gray-500 text-xs font-bold uppercase tracking-widest">
             <tr>
-              <th className="p-6">Order ID</th>
+              <th className="p-6">Tier</th>
               <th className="p-6">Customer</th>
               <th className="p-6">Status</th>
               <th className="p-6">Mechanic</th>
-              <th className="p-6">Amount</th>
+              <th className="p-6">Details</th>
               <th className="p-6 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
             {orders.map((order) => (
-              <tr key={order.id} className="hover:bg-white/5 transition-colors">
-                <td className="p-6 font-bold">{order.id}</td>
+              <tr key={order.id} className={`hover:bg-white/5 transition-colors ${order.is_premium ? 'bg-brand-neon/[0.03]' : ''}`}>
                 <td className="p-6">
-                   <p className="font-bold">{order.customer}</p>
-                   <p className="text-[10px] text-gray-500 uppercase font-bold">{order.vehicle}</p>
+                   <div className={`px-3 py-1 rounded-full text-[8px] font-black inline-block ${
+                     order.is_premium ? 'bg-brand-neon text-black' : 'bg-gray-800 text-gray-400'
+                   }`}>
+                     {order.service_tier}
+                   </div>
+                </td>
+                <td className="p-6">
+                   <p className="font-bold">{order.customer_name}</p>
+                   <p className="text-[10px] text-gray-500 font-bold">{order.phone_number}</p>
                 </td>
                 <td className="p-6">
                   <span className={`px-3 py-1 rounded-full text-[10px] font-black ${
-                    order.status === 'WORKING' ? 'bg-brand-neon/20 text-brand-neon' :
-                    order.status === 'DISPATCHED' ? 'bg-blue-500/20 text-blue-500' :
+                    order.status === 'PENDING_DISPATCH' ? 'bg-blue-500/20 text-blue-500' :
+                    order.status === 'PENDING_FEE' ? 'bg-yellow-500/20 text-yellow-500' :
                     'bg-gray-500/20 text-gray-500'
                   }`}>
                     {order.status}
                   </span>
                 </td>
                 <td className="p-6">
-                   {order.mechanic ? (
+                   {order.mechanic_name ? (
                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-brand-neon/10 rounded-full flex items-center justify-center text-brand-neon text-[10px] font-black">{order.mechanic[0]}</div>
-                        <span className="text-sm">{order.mechanic}</span>
+                        <div className="w-6 h-6 bg-brand-neon/10 rounded-full flex items-center justify-center text-brand-neon text-[10px] font-black">{order.mechanic_name[0]}</div>
+                        <span className="text-sm">{order.mechanic_name}</span>
                      </div>
                    ) : (
                      <button 
                        onClick={() => setSelectedOrder(order.id)}
                        className="text-[10px] font-black text-brand-neon border border-brand-neon/30 px-3 py-1 rounded-lg hover:bg-brand-neon hover:text-black transition-all"
                      >
-                       ALLOCATE NOW
+                       {order.is_premium ? 'PRIORITY ALLOCATE' : 'ALLOCATE'}
                      </button>
                    )}
                 </td>
-                <td className="p-6 font-bold">{order.amount}</td>
+                <td className="p-6">
+                   <p className="text-xs font-bold truncate max-w-[150px]">{order.vehicle_details}</p>
+                </td>
                 <td className="p-6 text-right relative">
                   <button className="text-gray-500 hover:text-white"><MoreVertical size={20} /></button>
-                  
-                  {selectedOrder === order.id && (
-                    <div className="absolute right-6 top-16 w-48 glass border-white/10 rounded-2xl shadow-2xl z-50 p-2 text-left">
-                       <p className="text-[10px] text-gray-500 font-bold uppercase p-2 border-b border-white/5">Available Mechanics</p>
-                       {mechanics.map(m => (
-                         <button 
-                           key={m} 
-                           onClick={() => setSelectedOrder(null)}
-                           className="w-full text-left p-2 text-xs hover:bg-brand-neon hover:text-black rounded-lg transition-colors flex items-center gap-2"
-                         >
-                            <div className="w-1.5 h-1.5 bg-brand-neon rounded-full" />
-                            {m}
-                         </button>
-                       ))}
-                    </div>
-                  )}
                 </td>
               </tr>
             ))}
+            {orders.length === 0 && (
+              <tr>
+                <td colSpan={6} className="p-20 text-center text-gray-600 font-bold uppercase tracking-widest text-xs">
+                  Waiting for new leads...
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

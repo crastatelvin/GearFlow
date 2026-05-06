@@ -21,6 +21,8 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     location: null as { lat: number, lng: number } | null
   });
 
+  const [tier, setTier] = useState<'STANDARD' | 'PREMIUM'>('STANDARD');
+
   const handleGetLocation = () => {
     if ("geolocation" in navigator) {
       setLoading(true);
@@ -45,11 +47,26 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
     e.preventDefault();
     setLoading(true);
     
-    // Simulate API call to backend
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:3001/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          lat: formData.location?.lat,
+          lng: formData.location?.lng,
+          tier: tier
+        })
+      });
+      
+      if (response.ok) {
+        setLoading(false);
+        setStep(2);
+      }
+    } catch (error) {
+      console.error("Order creation failed", error);
       setLoading(false);
-      setStep(2);
-    }, 2000);
+    }
   };
 
   return (
@@ -90,36 +107,47 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
                 </div>
 
                 <div className="space-y-4">
+                  <div className="flex gap-2 p-1 bg-white/5 rounded-2xl border border-white/10">
+                    <button 
+                      type="button"
+                      onClick={() => setTier('STANDARD')}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all ${tier === 'STANDARD' ? 'bg-white/10 text-white' : 'text-gray-500'}`}
+                    >
+                      STANDARD (FREE)
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setTier('PREMIUM')}
+                      className={`flex-1 py-3 rounded-xl text-[10px] font-black tracking-widest transition-all ${tier === 'PREMIUM' ? 'bg-brand-neon text-black shadow-[0_0_15px_rgba(57,255,20,0.3)]' : 'text-gray-500'}`}
+                    >
+                      EXPRESS (₹200)
+                    </button>
+                  </div>
+
                   <input 
                     required
                     placeholder="Full Name"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors text-sm"
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
-                  <input 
-                    required
-                    type="tel"
-                    placeholder="WhatsApp Number"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  />
-                  <input 
-                    required
-                    type="email"
-                    placeholder="Email Address"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                  <input 
-                    required
-                    placeholder="Vehicle Model (e.g. Royal Enfield Classic 350)"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors"
-                    value={formData.vehicle}
-                    onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    <input 
+                      required
+                      type="tel"
+                      placeholder="WhatsApp"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors text-sm"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    />
+                    <input 
+                      required
+                      placeholder="Vehicle Model"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-brand-neon outline-none transition-colors text-sm"
+                      value={formData.vehicle}
+                      onChange={(e) => setFormData({...formData, vehicle: e.target.value})}
+                    />
+                  </div>
                   
                   <button 
                     type="button"
@@ -135,9 +163,9 @@ export default function BookingModal({ isOpen, onClose }: BookingModalProps) {
 
                 <button 
                   disabled={loading || !formData.location}
-                  className="w-full py-4 bg-brand-neon text-black font-black rounded-xl hover:shadow-[0_0_20px_rgba(57,255,20,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="w-full py-4 bg-brand-neon text-black font-black rounded-xl hover:shadow-[0_0_20px_rgba(57,255,20,0.4)] disabled:opacity-50 disabled:cursor-not-allowed transition-all uppercase tracking-widest text-xs"
                 >
-                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : 'CONTINUE TO PAYMENT (₹200)'}
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : (tier === 'STANDARD' ? 'Request Free Dispatch' : 'Request Priority Dispatch (₹200)')}
                 </button>
               </form>
             ) : (

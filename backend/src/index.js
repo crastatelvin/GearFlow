@@ -19,10 +19,61 @@ import AuthService from './services/AuthService.js';
 
 // Mock DB for simulation
 const users = [];
+const orders = [];
 
 // Routes
 app.get('/health', (req, res) => {
   res.json({ status: 'GearFlow Backend is running', timestamp: new Date() });
+});
+
+// Create Order (Lead Intake)
+app.post('/orders', async (req, res) => {
+  const { name, phone, vehicle, lat, lng, tier } = req.body;
+  
+  const newOrder = {
+    id: Math.random().toString(36).substr(2, 9),
+    customer_name: name,
+    phone_number: phone,
+    vehicle_details: vehicle,
+    location_lat: lat,
+    location_lng: lng,
+    service_tier: tier,
+    is_premium: tier === 'PREMIUM',
+    status: tier === 'PREMIUM' ? 'PENDING_FEE' : 'PENDING_DISPATCH',
+    created_at: new Date()
+  };
+  
+  orders.unshift(newOrder); 
+
+  // --- n8n Dispatch Trigger ---
+  try {
+    // In production: await fetch('N8N_DISPATCH_WEBHOOK_URL', { method: 'POST', body: JSON.stringify(newOrder) });
+    console.log(`[n8n] Triggering smart dispatch for Order ${newOrder.id}`);
+  } catch (e) {
+    console.error("n8n Dispatch failed", e);
+  }
+
+  res.json({ success: true, order: newOrder });
+});
+
+// Update Dispatch (Called by n8n or Admin)
+app.patch('/orders/:id/dispatch', (req, res) => {
+  const { id } = req.params;
+  const { mechanic_name, status } = req.body;
+  
+  const order = orders.find(o => o.id === id);
+  if (order) {
+    order.mechanic_name = mechanic_name;
+    order.status = status || 'DISPATCHED';
+    order.updated_at = new Date();
+    return res.json({ success: true, order });
+  }
+  res.status(404).json({ error: 'Order not found' });
+});
+
+// Get Admin Orders (Live Sync)
+app.get('/admin/orders', (req, res) => {
+  res.json(orders);
 });
 
 // User Registration

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Shield, Zap, MapPin, ArrowRight, Menu, X, Star } from 'lucide-react';
+import { Settings, Shield, Zap, MapPin, ArrowRight, Menu, X, Star, User } from 'lucide-react';
 import Image from 'next/image';
 import BookingModal from '@/components/BookingModal';
 import ChatBot from '@/components/ChatBot';

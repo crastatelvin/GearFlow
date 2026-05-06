@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id UUID REFERENCES users(id),
     mechanic_id UUID REFERENCES mechanics(id),
     status TEXT DEFAULT 'PENDING_FEE',
+    service_tier TEXT DEFAULT 'STANDARD' CHECK (service_tier IN ('STANDARD', 'PREMIUM')),
+    is_premium BOOLEAN DEFAULT FALSE,
     location_lat DOUBLE PRECISION NOT NULL,
     location_lng DOUBLE PRECISION NOT NULL,
     vehicle_details TEXT NOT NULL,

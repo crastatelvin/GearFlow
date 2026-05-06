@@ -1,0 +1,98 @@
+{
+  "name": "GearFlow_Smart_Dispatch",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "dispatch-lead",
+        "options": {}
+      },
+      "name": "Webhook Lead Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, full_name, phone_number FROM mechanics WHERE status = 'AVAILABLE' AND is_approved = TRUE LIMIT 1;"
+      },
+      "name": "Find Available Mechanic",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [350, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$node[\"Find Available Mechanic\"].json.length > 0}}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "name": "Mechanic Found?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [550, 200]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://localhost:3001/orders/{{$node[\"Webhook Lead Trigger\"].json[\"body\"][\"id\"]}}/dispatch",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "mechanic_name",
+              "value": "={{$node[\"Find Available Mechanic\"].json[0][\"full_name\"]}}"
+            },
+            {
+              "name": "status",
+              "value": "DISPATCHED"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Update Backend Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [850, 150]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4-o",
+        "prompt": "=Write a dispatch notification for mechanic {{$node[\"Find Available Mechanic\"].json[0][\"full_name\"]}} for order {{$node[\"Webhook Lead Trigger\"].json[\"body\"][\"id\"]}}."
+      },
+      "name": "Generate Dispatch SMS",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1050, 150]
+    }
+  ],
+  "connections": {
+    "Webhook Lead Trigger": {
+      "main": [
+        [ { "node": "Find Available Mechanic", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Find Available Mechanic": {
+      "main": [
+        [ { "node": "Mechanic Found?", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Mechanic Found?": {
+      "main": [
+        [ { "node": "Update Backend Status", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Update Backend Status": {
+      "main": [
+        [ { "node": "Generate Dispatch SMS", "type": "main", "index": 0 } ]
+      ]
+    }
+  }
+}

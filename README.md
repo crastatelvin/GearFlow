@@ -186,6 +186,9 @@ GearFlow/
 
 The `infra/n8n/` directory contains the blueprint of GearFlow's intelligence:
 
+![n8n Workflows](docs/screenshots/n8n_workflows.png)
+
+
 1.  **`dispatch_workflow.json`**: Handles the logic for matching service requests to the best available mechanic.
 2.  **`rag_workflow.json`**: Implements the Retrieval-Augmented Generation pipeline to provide mechanics with repair guides.
 3.  **`operations_fraud.json`**: Analyzes technician photos and logs to detect anomalies.

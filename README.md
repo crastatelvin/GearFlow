@@ -1,13 +1,4 @@
 <div align="center">
-</div>
-
-<br/>
-
-### 6) Admin Dashboard
-![Admin Dashboard](docs/screenshots/admin_overview.png)
-
-<p align="center">Full admin suite with fleet maps, analytics, and fraud monitoring.</p>
-<div align="center">
 
 # 🚲 GEARFLOW
 
@@ -59,7 +50,7 @@ GearFlow transforms traditional bike maintenance into a fully autonomous digital
 
 ---
 
-## ??? Application Preview
+## 🖼️ Application Preview
 
 <div align="center">
 
@@ -85,6 +76,37 @@ GearFlow transforms traditional bike maintenance into a fully autonomous digital
 
 ### 5) AI Assistant
 ![AI Chat](docs/screenshots/05-ai-chat.png)
+
+<br/>
+
+---
+
+## 🛡️ Admin Dashboard Features
+
+The Admin Dashboard provides real-time oversight of the entire autonomous fleet.
+
+### 📊 Fleet Overview & Analytics
+![Admin Overview](docs/screenshots/admin_overview.png)
+*Real-time metrics, revenue tracking, and active session monitoring.*
+
+<br/>
+
+### 🗺️ Live Fleet Tracking
+![Admin Map](docs/screenshots/admin_map.png)
+*Geographic distribution of active mechanics and service requests.*
+
+<br/>
+
+### 📋 Active Orders & Mechanics
+| Active Service Orders | Registered Technicians |
+|---|---|
+| ![Orders](docs/screenshots/admin_orders.png) | ![Mechanics](docs/screenshots/admin_mechanics.png) |
+
+<br/>
+
+### 🛡️ Fraud & Operations Logs
+![Admin Fraud](docs/screenshots/admin_fraud.png)
+*AI-detected anomalies and verification logs.*
 
 </div>
 
@@ -184,10 +206,14 @@ GearFlow/
 
 ## 🤖 Infrastructure & Workflows
 
-The `infra/n8n/` directory contains the blueprint of GearFlow's intelligence:
+The `infra/n8n/` directory contains the blueprint of GearFlow's intelligence.
+
+<div align="center">
 
 ![n8n Workflows](docs/screenshots/n8n_workflows.png)
+*Orchestrated logic for Dispatch, RAG, and Fraud Detection.*
 
+</div>
 
 1.  **`dispatch_workflow.json`**: Handles the logic for matching service requests to the best available mechanic.
 2.  **`rag_workflow.json`**: Implements the Retrieval-Augmented Generation pipeline to provide mechanics with repair guides.

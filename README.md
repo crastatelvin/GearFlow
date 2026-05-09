@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚲 GEARFLOW
+# 🏍️ GEARFLOW
 
 ### Fully Autonomous Bike Service — AI-Driven Logistics, Smart Dispatch & RAG-Powered Support
 

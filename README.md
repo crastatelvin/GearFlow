@@ -282,7 +282,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 <div align="center">
 <br/>
-Built by **Telvin Crasta** • Empowering Autonomous Service
+Built by Telvin Crasta • Empowering Autonomous Service
 <br/>
 ⭐ Star this repo if you're building the future of autonomous logistics!
 </div>

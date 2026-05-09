@@ -41,3 +41,8 @@ Thumbs.db
 # Local data
 data/
 pg_data/
+
+# Internal documentation and memory
+docs/
+memory/
+MEMORY.md

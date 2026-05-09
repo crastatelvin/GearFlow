@@ -1,8 +1,8 @@
 "use client";
 
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Zap, Clock, Shield, MapPin, Settings, User, LogOut, Star } from 'lucide-react';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Zap, Clock, Shield, MapPin, Settings, User, LogOut, Star, XCircle, ArrowUpRight } from 'lucide-react';
 
 export default function CustomerDashboard() {
   const history = [
@@ -230,4 +230,3 @@ function AIChatWidget() {
   );
 }
 
-import { XCircle, ArrowUpRight } from 'lucide-react';

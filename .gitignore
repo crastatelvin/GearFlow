@@ -44,5 +44,6 @@ pg_data/
 
 # Internal documentation and memory
 docs/
+!docs/screenshots/
 memory/
 MEMORY.md

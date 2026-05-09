@@ -26,6 +26,7 @@
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
+- [Application Preview](#-application-preview)
 - [System Features](#-system-features)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
@@ -46,6 +47,37 @@ GearFlow transforms traditional bike maintenance into a fully autonomous digital
 - **Customers:** Request service via a premium Next.js portal, track mechanics in real-time, and receive AI-generated health reports for their bikes.
 - **Mechanics:** Use an offline-first Expo app to receive jobs, navigate to locations, and verify part replacements using vision-based AI.
 - **System:** n8n acts as the "Central Nervous System," handling fraud detection, automated payouts, and RAG-based technical support for mechanics.
+
+---
+
+## ??? Application Preview
+
+<div align="center">
+
+### 1) Landing Page
+![Landing Page](docs/screenshots/01-landing.png)
+
+<br/>
+
+### 2) Login Page
+![Login Page](docs/screenshots/02-login.png)
+
+<br/>
+
+### 3) Customer Dashboard
+![Dashboard](docs/screenshots/03-dashboard.png)
+
+<br/>
+
+### 4) Live Tracking
+![Tracking](docs/screenshots/04-tracking.png)
+
+<br/>
+
+### 5) AI Assistant
+![AI Chat](docs/screenshots/05-ai-chat.png)
+
+</div>
 
 ---
 

@@ -22,7 +22,8 @@ const statuses = [
   { id: 'COMPLETED', label: 'Work Finished', icon: <CheckCircle2 size={20} /> },
 ];
 
-export default function TrackingPortal({ params }: { params: { id: string } }) {
+export default function TrackingPortal({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = React.use(params);
   const [currentStatus, setCurrentStatus] = useState('DISPATCHED');
   const [timeLeft, setTimeLeft] = useState(12); // Minutes
 
@@ -110,7 +111,7 @@ export default function TrackingPortal({ params }: { params: { id: string } }) {
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Order ID</p>
-              <p className="font-mono font-bold text-sm">#{params.id.slice(0, 8).toUpperCase()}</p>
+              <p className="font-mono font-bold text-sm">#{id.slice(0, 8).toUpperCase()}</p>
             </div>
             <div className="bg-white/5 p-4 rounded-2xl border border-white/5">
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1">Verification Code</p>

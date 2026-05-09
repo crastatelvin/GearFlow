@@ -1,4 +1,13 @@
 <div align="center">
+</div>
+
+<br/>
+
+### 6) Admin Dashboard
+![Admin Dashboard](docs/screenshots/admin_overview.png)
+
+<p align="center">Full admin suite with fleet maps, analytics, and fraud monitoring.</p>
+<div align="center">
 
 # 🚲 GEARFLOW
 

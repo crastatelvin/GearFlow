@@ -1,3 +1,5 @@
+import { query } from '../db/index.js';
+
 /**
  * GearFlow Smart Allocation Engine
  * Autonomously matches leads to the best available mechanics.
@@ -26,7 +28,7 @@ class AllocationEngine {
     const rankedMechanics = availableMechanics
       .map(m => ({
         ...m,
-        distance: this.calculateDistance(leadLocation, m.location),
+        distance: this.calculateDistance(leadLocation, m.location || { lat: m.current_lat, lng: m.current_lng }),
         score: this.calculateAIScore(m)
       }))
       .filter(m => m.distance <= this.DEFAULT_RADIUS_KM)
@@ -38,7 +40,7 @@ class AllocationEngine {
     }
 
     const primaryTarget = rankedMechanics[0];
-    console.log(`[ALLOCATION] Optimal Mechanic Found: ${primaryTarget.name} (${primaryTarget.distance.toFixed(2)}km away)`);
+    console.log(`[ALLOCATION] Optimal Mechanic Found: ${primaryTarget.name || primaryTarget.full_name} (${primaryTarget.distance.toFixed(2)}km away)`);
     
     return primaryTarget;
   }
@@ -47,6 +49,7 @@ class AllocationEngine {
    * Simple Euclidean distance for simulation (to be replaced by Google Distance Matrix API)
    */
   calculateDistance(loc1, loc2) {
+    if (!loc1 || !loc2) return 999;
     const latDiff = loc1.lat - loc2.lat;
     const lngDiff = loc1.lng - loc2.lng;
     return Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 111; // Approx conversion to KM
@@ -56,7 +59,9 @@ class AllocationEngine {
    * AI Weighting: Priority = (Rating * 0.7) + (Experience_Weight * 0.3)
    */
   calculateAIScore(mechanic) {
-    return (mechanic.rating * 0.7) + ((mechanic.jobs_completed / 100) * 0.3);
+    const rating = mechanic.rating || mechanic.average_rating || 5.0;
+    const jobsCompleted = mechanic.jobs_completed || 0;
+    return (rating * 0.7) + ((jobsCompleted / 100) * 0.3);
   }
 
   /**
@@ -64,7 +69,43 @@ class AllocationEngine {
    */
   async reallocate(leadId, currentMechanicId, mechanics) {
     console.log(`[ALLOCATION] Reallocating lead ${leadId} away from ${currentMechanicId}...`);
-    // Logic to pick the next best from the ranked list
+    
+    // Filter out the current mechanic who rejected/timed out
+    const remainingMechanics = mechanics.filter(m => m.id !== currentMechanicId);
+    
+    // Fetch lead location from DB
+    let leadLocation = { lat: 28.6139, lng: 77.2090 }; // Default delhi coordinates
+    try {
+      const leadResult = await query('SELECT location_lat, location_lng FROM orders WHERE id = $1', [leadId]);
+      if (leadResult.rows.length > 0) {
+        leadLocation = {
+          lat: leadResult.rows[0].location_lat,
+          lng: leadResult.rows[0].location_lng
+        };
+      }
+    } catch (e) {
+      console.error("[ALLOCATION] Failed to fetch lead location, using default coords", e);
+    }
+
+    const nextBest = await this.findOptimalMechanic(leadLocation, remainingMechanics);
+    if (!nextBest) {
+      console.log(`[ALLOCATION] Reallocation failed: No alternative mechanics available.`);
+      // Update order status back to AWAITING_MECHANIC
+      await query(
+        'UPDATE orders SET status = $1, mechanic_id = NULL, mechanic_name = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+        ['AWAITING_MECHANIC', leadId]
+      );
+      return null;
+    }
+
+    // Update order with new mechanic details
+    await query(
+      'UPDATE orders SET mechanic_id = $1, mechanic_name = $2, status = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
+      [nextBest.id, nextBest.full_name || nextBest.name, 'DISPATCHED', leadId]
+    );
+
+    console.log(`[ALLOCATION] Lead ${leadId} successfully reallocated to ${nextBest.full_name || nextBest.name}`);
+    return nextBest;
   }
 }
 

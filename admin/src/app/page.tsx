@@ -130,6 +130,30 @@ function DashboardHome() {
     dailyRevenue: 0,
     fraudAlerts: 0
   });
+  const [isRollingOut, setIsRollingOut] = useState(false);
+  const [rolloutMessage, setRolloutMessage] = useState<string | null>(null);
+
+  const handleRolloutPayouts = async () => {
+    setIsRollingOut(true);
+    setRolloutMessage(null);
+    try {
+      const response = await fetch('http://localhost:3001/admin/payouts/rollout', {
+        method: 'POST',
+      });
+      const data = await response.json();
+      if (data.success) {
+        setRolloutMessage(`Success: Paid ${data.processedCount} mechanics!`);
+      } else {
+        setRolloutMessage(`Failed: ${data.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      console.error(e);
+      setRolloutMessage('Error connecting to server');
+    } finally {
+      setIsRollingOut(false);
+      setTimeout(() => setRolloutMessage(null), 5000); // Clear message after 5 seconds
+    }
+  };
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -154,9 +178,23 @@ function DashboardHome() {
           <h1 className="text-4xl font-black tracking-tighter">OPERATIONS <span className="text-brand-neon italic">HUB</span></h1>
           <p className="text-gray-500 text-sm mt-1 uppercase tracking-widest font-bold">Real-time GearFlow Monitoring</p>
         </div>
-        <button className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl hover:border-brand-neon/50 transition-colors text-sm font-bold">
-          EXPORT REPORT
-        </button>
+        <div className="flex gap-4 items-center">
+          {rolloutMessage && (
+            <span className="text-xs text-brand-neon bg-brand-neon/10 border border-brand-neon/20 px-3 py-1 rounded-lg">
+              {rolloutMessage}
+            </span>
+          )}
+          <button 
+            onClick={handleRolloutPayouts}
+            disabled={isRollingOut}
+            className="px-6 py-2 bg-brand-neon hover:bg-brand-neon/80 text-black rounded-xl disabled:opacity-50 transition-colors text-sm font-black"
+          >
+            {isRollingOut ? 'ROLLING OUT...' : 'ROLLOUT PAYOUTS'}
+          </button>
+          <button className="px-6 py-2 bg-white/5 border border-white/10 rounded-xl hover:border-brand-neon/50 transition-colors text-sm font-bold">
+            EXPORT REPORT
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

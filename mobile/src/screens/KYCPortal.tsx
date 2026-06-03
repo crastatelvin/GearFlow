@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, SafeAreaView, StatusBar, Image } from 'react-native';
-import { ChevronLeft, Camera, ShieldCheck, CheckCircle2, AlertTriangle, FileText, Upload } from 'lucide-react-native';
+import { ChevronLeft, Camera, ShieldCheck, CheckCircle2, AlertTriangle, FileText, Upload, Clock } from 'lucide-react-native';
 
 export default function KYCPortal() {
   const [docs, setDocs] = useState([

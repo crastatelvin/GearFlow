@@ -32,7 +32,7 @@ export default function CameraScreen({ onCapture, onClose }: { onCapture: (uri: 
       <View style={styles.header}>
         <Shield size={24} color="#39FF14" />
         <Text style={styles.headerTitle}>AI PART VERIFICATION</Text>
-        <TouchableOpacity onClick={onClose}>
+        <TouchableOpacity onPress={onClose}>
           <X size={24} color="#fff" />
         </TouchableOpacity>
       </View>

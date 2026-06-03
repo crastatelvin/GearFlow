@@ -1,3 +1,5 @@
+import { query } from '../db/index.js';
+
 /**
  * GearFlow Commission & Payout Engine
  * Automates the 70/30 split and monthly salary rollout.
@@ -12,14 +14,23 @@ class PayoutEngine {
   /**
    * Processes a completed job and calculates shares
    */
-  async processJobCompletion(jobAmount, mechanicId) {
+  async processJobCompletion(jobAmount, mechanicId, orderId = null) {
     const netEarnings = jobAmount * this.MECHANIC_SHARE;
     const commission = jobAmount * this.GEARFLOW_COMMISSION;
 
     console.log(`[PAYOUT] Job ₹${jobAmount} completed. Mechanic Share: ₹${netEarnings}, Commission: ₹${commission}`);
     
-    // TODO: Update mechanic_wallets table
-    // UPDATE mechanic_wallets SET balance = balance + netEarnings WHERE mechanic_id = mechanicId;
+    // Update mechanics table wallet balance
+    await query(
+      'UPDATE mechanics SET wallet_balance = wallet_balance + $1 WHERE id = $2',
+      [netEarnings, mechanicId]
+    );
+
+    // Insert wallet transaction
+    await query(
+      'INSERT INTO wallet_transactions (mechanic_id, order_id, type, amount, status) VALUES ($1, $2, $3, $4, $5)',
+      [mechanicId, orderId, 'EARNING', netEarnings, 'PENDING_ESCROW']
+    );
     
     return { netEarnings, commission };
   }

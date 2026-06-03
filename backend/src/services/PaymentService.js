@@ -1,3 +1,5 @@
+import { query } from '../db/index.js';
+
 /**
  * GearFlow Payment Service
  * Handles Stripe / Razorpay integrations and Payout calculations.
@@ -27,13 +29,24 @@ class PaymentService {
   /**
    * Calculates the 70/30 split and updates wallets
    */
-  async processSplit(totalAmount, mechanicId) {
+  async processSplit(totalAmount, mechanicId, orderId = null) {
     const mechanicShare = totalAmount * 0.70;
     const companyShare = totalAmount * 0.30;
     
     console.log(`[PAYMENT_LOGIC] Processing 70/30 Split: Mechanic(₹${mechanicShare}), GearFlow(₹${companyShare})`);
     
-    // TODO: DB logic to update mechanic_wallets table
+    // Update mechanics table wallet balance
+    await query(
+      'UPDATE mechanics SET wallet_balance = wallet_balance + $1 WHERE id = $2',
+      [mechanicShare, mechanicId]
+    );
+
+    // Insert wallet transaction
+    await query(
+      'INSERT INTO wallet_transactions (mechanic_id, order_id, type, amount, status) VALUES ($1, $2, $3, $4, $5)',
+      [mechanicId, orderId, 'EARNING', mechanicShare, 'PENDING_ESCROW']
+    );
+
     return { mechanicShare, companyShare };
   }
 

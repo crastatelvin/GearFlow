@@ -36,16 +36,41 @@ class PayoutEngine {
   }
 
   /**
-   * Simulates the monthly salary rollout (First week of month)
+   * Processes the weekly/monthly salary rollout
    */
   async rolloutMonthlySalary() {
-    console.log(`[PAYOUT] Starting Monthly Salary Rollout...`);
+    console.log(`[PAYOUT] Starting Salary Rollout...`);
     
-    // 1. Fetch all mechanics with positive balances
-    // 2. Trigger transfers to their bank accounts (via Stripe Connect / Payouts)
-    // 3. Reset balances and log transaction
-    
-    return { success: true, processedCount: 156 };
+    try {
+      // 1. Fetch all mechanics with positive balances
+      const result = await query('SELECT id, wallet_balance FROM mechanics WHERE wallet_balance > 0');
+      const mechanics = result.rows;
+      let processedCount = 0;
+
+      for (const mechanic of mechanics) {
+        const amount = mechanic.wallet_balance;
+
+        // 2. Log transaction in wallet_transactions table
+        await query(
+          'INSERT INTO wallet_transactions (mechanic_id, type, amount, status) VALUES ($1, $2, $3, $4)',
+          [mechanic.id, 'PAYOUT', amount, 'PAID_OUT']
+        );
+
+        // 3. Reset wallet balance in mechanics table
+        await query(
+          'UPDATE mechanics SET wallet_balance = 0.00 WHERE id = $1',
+          [mechanic.id]
+        );
+
+        processedCount++;
+      }
+
+      console.log(`[PAYOUT] Rollout completed successfully. Processed ${processedCount} mechanics.`);
+      return { success: true, processedCount };
+    } catch (error) {
+      console.error('[PAYOUT] Rollout failed:', error);
+      throw error;
+    }
   }
 }
 

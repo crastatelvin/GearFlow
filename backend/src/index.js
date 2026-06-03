@@ -5,6 +5,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { query } from './db/index.js';
 import AuthService from './services/AuthService.js';
+import PayoutEngine from './services/PayoutEngine.js';
 
 dotenv.config();
 
@@ -233,6 +234,17 @@ app.post('/chat', async (req, res) => {
   } catch (error) {
     console.error("RAG fetch failed", error);
     res.json({ response: "My diagnostic systems are currently offline. Please try again in a few minutes!" });
+  }
+});
+
+// Admin Payout Rollout
+app.post('/admin/payouts/rollout', async (req, res) => {
+  try {
+    const result = await PayoutEngine.rolloutMonthlySalary();
+    res.json(result);
+  } catch (error) {
+    console.error("Payout rollout failed", error);
+    res.status(500).json({ error: 'Failed to process payouts rollout' });
   }
 });
 

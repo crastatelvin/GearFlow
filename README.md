@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/images/gearflow-logo.png" alt="GearFlow logo" width="180"/>
+
 # 🏍️ GEARFLOW
 
 ### Fully Autonomous Bike Service — AI-Driven Logistics, Smart Dispatch & RAG-Powered Support
